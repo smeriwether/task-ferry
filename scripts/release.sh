@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="${1:?Usage: scripts/release.sh VERSION}"
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "VERSION must look like 1.2.3" >&2; exit 1; }
+: "${APPLE_TEAM_ID:?Set APPLE_TEAM_ID}"
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app ]]; then
+  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+fi
+BUILD_ROOT="${BUILD_ROOT:-$ROOT/build/release}"
+SPM_CACHE="$BUILD_ROOT/SourcePackages"
+ARCHIVE="$BUILD_ROOT/RemindersRemote.xcarchive"
+EXPORT="$BUILD_ROOT/export"
+STAGING="$BUILD_ROOT/dmg"
+BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d%H%M)}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-RemindersRemote}"
+REPOSITORY="${GITHUB_REPOSITORY:-MeriMeriMeri/reminders-remote}"
+
+rm -rf "$BUILD_ROOT"
+mkdir -p "$BUILD_ROOT" "$EXPORT" "$STAGING"
+cd "$ROOT"
+
+xcodegen generate
+xcodebuild -resolvePackageDependencies \
+  -project RemindersRemote.xcodeproj \
+  -scheme RemindersRemote \
+  -clonedSourcePackagesDirPath "$SPM_CACHE"
+
+xcodebuild clean archive \
+  -project RemindersRemote.xcodeproj \
+  -scheme RemindersRemote \
+  -configuration Release-Direct \
+  -destination 'generic/platform=macOS' \
+  -archivePath "$ARCHIVE" \
+  -derivedDataPath "$BUILD_ROOT/DerivedData" \
+  -clonedSourcePackagesDirPath "$SPM_CACHE" \
+  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+  CODE_SIGN_STYLE=Manual \
+  CODE_SIGN_IDENTITY="Developer ID Application" \
+  MARKETING_VERSION="$VERSION" \
+  CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+
+EXPORT_OPTIONS="$BUILD_ROOT/ExportOptions.plist"
+plutil -create xml1 "$EXPORT_OPTIONS"
+plutil -insert method -string developer-id "$EXPORT_OPTIONS"
+plutil -insert teamID -string "$APPLE_TEAM_ID" "$EXPORT_OPTIONS"
+plutil -insert signingStyle -string manual "$EXPORT_OPTIONS"
+plutil -insert signingCertificate -string "Developer ID Application" "$EXPORT_OPTIONS"
+
+xcodebuild -exportArchive \
+  -archivePath "$ARCHIVE" \
+  -exportOptionsPlist "$EXPORT_OPTIONS" \
+  -exportPath "$EXPORT"
+
+APP="$EXPORT/RemindersRemote.app"
+NOTARY_ZIP="$BUILD_ROOT/RemindersRemote-notarize.zip"
+DMG="$BUILD_ROOT/RemindersRemote-$VERSION.dmg"
+ZIP="$BUILD_ROOT/RemindersRemote-$VERSION.zip"
+
+ditto -c -k --keepParent "$APP" "$NOTARY_ZIP"
+xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+xcrun stapler staple "$APP"
+
+cp -R "$APP" "$STAGING/Reminders Remote.app"
+ln -s /Applications "$STAGING/Applications"
+hdiutil create -volname "Reminders Remote" -srcfolder "$STAGING" -ov -format UDZO "$DMG"
+xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+xcrun stapler staple "$DMG"
+
+ditto -c -k --keepParent "$STAGING/Reminders Remote.app" "$ZIP"
+SIGN_UPDATE="$(find "$SPM_CACHE/artifacts" -path '*/Sparkle/bin/sign_update' -type f -print -quit)"
+if [[ -n "${SPARKLE_PRIVATE_KEY_FILE:-}" ]]; then
+  SIGN_OUTPUT="$("$SIGN_UPDATE" "$ZIP" --ed-key-file "$SPARKLE_PRIVATE_KEY_FILE")"
+else
+  SIGN_OUTPUT="$("$SIGN_UPDATE" "$ZIP")"
+fi
+SIGNATURE="$(sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p' <<< "$SIGN_OUTPUT")"
+SIZE="$(stat -f%z "$ZIP")"
+[[ -n "$SIGNATURE" ]] || { echo "Sparkle signature was not produced" >&2; exit 1; }
+
+NOTES="${RELEASE_NOTES_HTML:-<p>Bug fixes and improvements.</p>}"
+cat > "$BUILD_ROOT/appcast.xml" <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Reminders Remote Updates</title>
+    <link>https://github.com/$REPOSITORY/releases</link>
+    <description>Reminders Remote updates</description>
+    <language>en</language>
+    <item>
+      <title>Version $VERSION</title>
+      <sparkle:version>$BUILD_NUMBER</sparkle:version>
+      <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+      <description><![CDATA[$NOTES]]></description>
+      <pubDate>$(date -u +"%a, %d %b %Y %H:%M:%S +0000")</pubDate>
+      <enclosure url="https://github.com/$REPOSITORY/releases/download/v$VERSION/RemindersRemote-$VERSION.zip" sparkle:edSignature="$SIGNATURE" length="$SIZE" type="application/octet-stream" />
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+    </item>
+  </channel>
+</rss>
+EOF
+
+cp "$DMG" "$BUILD_ROOT/RemindersRemote.dmg"
+codesign --verify --deep --strict --verbose=2 "$APP"
+xcrun stapler validate "$APP"
+xcrun stapler validate "$DMG"
+
+printf 'Release artifacts:\n%s\n%s\n%s\n%s\n' \
+  "$DMG" "$BUILD_ROOT/RemindersRemote.dmg" "$ZIP" "$BUILD_ROOT/appcast.xml"
