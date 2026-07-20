@@ -23,9 +23,9 @@ struct RemindersRemoteApp: App {
         }
 
         MenuBarExtra {
-            MenuRootView(state: state)
+            QuickEntryView(state: state)
         } label: {
-            Label("Reminders Remote", systemImage: menuIcon)
+            Label("Quick Reminder", systemImage: "plus.circle")
         }
         .menuBarExtraStyle(.window)
 
@@ -34,8 +34,4 @@ struct RemindersRemoteApp: App {
         }
     }
 
-    private var menuIcon: String {
-        guard state.mode == .remote else { return "antenna.radiowaves.left.and.right" }
-        return state.todayReminders.isEmpty ? "checkmark.circle" : "checklist"
-    }
 }
