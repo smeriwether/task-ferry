@@ -11,11 +11,11 @@ if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app ]]; then
 fi
 BUILD_ROOT="${BUILD_ROOT:-$ROOT/build/release}"
 SPM_CACHE="$BUILD_ROOT/SourcePackages"
-ARCHIVE="$BUILD_ROOT/RemindersRemote.xcarchive"
+ARCHIVE="$BUILD_ROOT/TaskFerry.xcarchive"
 EXPORT="$BUILD_ROOT/export"
 STAGING="$BUILD_ROOT/dmg"
 BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d%H%M)}"
-NOTARY_PROFILE="${NOTARY_PROFILE:-RemindersRemote}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-TaskFerry}"
 REPOSITORY="${GITHUB_REPOSITORY:-smeriwether/task-ferry}"
 
 rm -rf "$BUILD_ROOT"
@@ -24,13 +24,13 @@ cd "$ROOT"
 
 xcodegen generate
 xcodebuild -resolvePackageDependencies \
-  -project RemindersRemote.xcodeproj \
-  -scheme RemindersRemote \
+  -project TaskFerry.xcodeproj \
+  -scheme TaskFerry \
   -clonedSourcePackagesDirPath "$SPM_CACHE"
 
 xcodebuild clean archive \
-  -project RemindersRemote.xcodeproj \
-  -scheme RemindersRemote \
+  -project TaskFerry.xcodeproj \
+  -scheme TaskFerry \
   -configuration Release-Direct \
   -destination 'generic/platform=macOS' \
   -archivePath "$ARCHIVE" \

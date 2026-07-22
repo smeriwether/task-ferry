@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8D1F761A7FB8E1E90E87A865"
-               BuildableName = "RemindersRemote.app"
-               BlueprintName = "RemindersRemote"
-               ReferencedContainer = "container:RemindersRemote.xcodeproj">
+               BlueprintIdentifier = "996EA4CDF40544C43F34DBC0"
+               BuildableName = "TaskFerry.app"
+               BlueprintName = "TaskFerry"
+               ReferencedContainer = "container:TaskFerry.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -32,10 +32,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8D1F761A7FB8E1E90E87A865"
-            BuildableName = "RemindersRemote.app"
-            BlueprintName = "RemindersRemote"
-            ReferencedContainer = "container:RemindersRemote.xcodeproj">
+            BlueprintIdentifier = "996EA4CDF40544C43F34DBC0"
+            BuildableName = "TaskFerry.app"
+            BlueprintName = "TaskFerry"
+            ReferencedContainer = "container:TaskFerry.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -44,10 +44,10 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C9205146C53ADE444F632ACE"
-               BuildableName = "RemindersRemoteTests.xctest"
-               BlueprintName = "RemindersRemoteTests"
-               ReferencedContainer = "container:RemindersRemote.xcodeproj">
+               BlueprintIdentifier = "0118FA96DEFFB2497E91473B"
+               BuildableName = "TaskFerryTests.xctest"
+               BlueprintName = "TaskFerryTests"
+               ReferencedContainer = "container:TaskFerry.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -68,10 +68,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8D1F761A7FB8E1E90E87A865"
-            BuildableName = "RemindersRemote.app"
-            BlueprintName = "RemindersRemote"
-            ReferencedContainer = "container:RemindersRemote.xcodeproj">
+            BlueprintIdentifier = "996EA4CDF40544C43F34DBC0"
+            BuildableName = "TaskFerry.app"
+            BlueprintName = "TaskFerry"
+            ReferencedContainer = "container:TaskFerry.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -87,10 +87,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8D1F761A7FB8E1E90E87A865"
-            BuildableName = "RemindersRemote.app"
-            BlueprintName = "RemindersRemote"
-            ReferencedContainer = "container:RemindersRemote.xcodeproj">
+            BlueprintIdentifier = "996EA4CDF40544C43F34DBC0"
+            BuildableName = "TaskFerry.app"
+            BlueprintName = "TaskFerry"
+            ReferencedContainer = "container:TaskFerry.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>

@@ -40,8 +40,8 @@ Requirements: macOS 14 or newer, Xcode, and [XcodeGen](https://github.com/yonask
 brew install xcodegen
 xcodegen generate
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build \
-  -project RemindersRemote.xcodeproj \
-  -scheme RemindersRemote \
+  -project TaskFerry.xcodeproj \
+  -scheme TaskFerry \
   -configuration Debug \
   -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath .derivedData \
@@ -53,7 +53,7 @@ Run the eight host-independent core tests with `xcodebuild test` and the same ar
 For the safe sample UI used during development:
 
 ```sh
-REMINDERS_REMOTE_DEMO=1 .derivedData/Build/Products/Debug/TaskFerry.app/Contents/MacOS/TaskFerry
+TASK_FERRY_DEMO=1 .derivedData/Build/Products/Debug/TaskFerry.app/Contents/MacOS/TaskFerry
 ```
 
 Demo mode is in-memory and never requests Reminders access.
@@ -107,7 +107,7 @@ Create releases with:
 APPLE_TEAM_ID=YOUR_TEAM_ID scripts/release.sh 0.1.0
 ```
 
-The script uses the `RemindersRemote` notarization profile and the Sparkle private key in the login Keychain. It produces a versioned DMG, a stable `TaskFerry.dmg`, an update ZIP, and `appcast.xml` under `build/release/`.
+The script uses the `TaskFerry` notarization profile and the Sparkle private key in the login Keychain. It produces a versioned DMG, a stable `TaskFerry.dmg`, an update ZIP, and `appcast.xml` under `build/release/`.
 
 The included GitHub Actions workflow publishes those four files when a `v*` tag is pushed. It requires these repository secrets:
 

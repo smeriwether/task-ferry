@@ -11,7 +11,7 @@ final class BridgeServer {
 
     private let service: any ReminderService
     private let token: String
-    private let queue = DispatchQueue(label: "RemindersRemote.Bridge")
+    private let queue = DispatchQueue(label: "TaskFerry.Bridge")
     private var listener: NWListener?
     var onStateChange: ((State) -> Void)?
     private(set) var state: State = .stopped {

@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @main
-struct RemindersRemoteApp: App {
+struct TaskFerryApp: App {
     @State private var state = AppState()
 
     init() {

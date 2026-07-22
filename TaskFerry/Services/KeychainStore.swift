@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 enum KeychainStore {
-    private static let service = "com.merimerimeri.RemindersRemote"
+    private static let service = "com.merimerimeri.TaskFerry"
 
     static func string(for account: String) -> String {
         let query: [String: Any] = [

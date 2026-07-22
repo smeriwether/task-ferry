@@ -46,7 +46,7 @@ private struct SetupView: View {
                 Section("This Mac should") {
                     modeButton(
                         title: "Connect to my Mac mini",
-                        subtitle: "View and manage reminders remotely",
+                        subtitle: "View and manage tasks from anywhere",
                         symbol: "laptopcomputer.and.iphone",
                         mode: .remote
                     )

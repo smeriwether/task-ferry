@@ -53,7 +53,7 @@ final class AppState {
     var bridgeToken: String { KeychainStore.string(for: SecretKey.bridgeToken) }
 
     init() {
-        isDemo = ProcessInfo.processInfo.environment["REMINDERS_REMOTE_DEMO"] == "1"
+        isDemo = ProcessInfo.processInfo.environment["TASK_FERRY_DEMO"] == "1"
         if isDemo {
             mode = .remote
             service = DemoReminderService()

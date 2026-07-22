@@ -7,5 +7,5 @@
 - Fetch EventKit objects by identifier for each mutation. Do not cache `EKReminder` or `EKCalendar` instances across requests.
 - Keep the bridge bound to loopback. Cloudflare Tunnel and Access are separate operational layers.
 - Never log or persist credentials outside Keychain.
-- Use `REMINDERS_REMOTE_DEMO=1` for UI verification so tests cannot mutate real reminders or trigger privacy prompts.
+- Use `TASK_FERRY_DEMO=1` for UI verification so tests cannot mutate real reminders or trigger privacy prompts.
 - Run the core tests after substantive model, protocol, or service changes. They are intentionally host-independent because a `MenuBarExtra` app is not a reliable XCTest host.

@@ -1,4 +1,4 @@
-name: RemindersRemote
+name: TaskFerry
 configs:
   Debug: debug
   Release: release
@@ -18,46 +18,46 @@ packages:
     url: https://github.com/sparkle-project/Sparkle
     from: 2.9.4
 targets:
-  RemindersRemote:
+  TaskFerry:
     type: application
     platform: macOS
     sources:
-      - RemindersRemote
+      - TaskFerry
     dependencies:
       - package: Sparkle
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.merimerimeri.RemindersRemote
+        PRODUCT_BUNDLE_IDENTIFIER: com.merimerimeri.TaskFerry
         PRODUCT_NAME: TaskFerry
-        INFOPLIST_FILE: RemindersRemote/Info.plist
-        CODE_SIGN_ENTITLEMENTS: RemindersRemote/RemindersRemote.entitlements
+        INFOPLIST_FILE: TaskFerry/Info.plist
+        CODE_SIGN_ENTITLEMENTS: TaskFerry/TaskFerry.entitlements
         GENERATE_INFOPLIST_FILE: false
         ENABLE_HARDENED_RUNTIME: true
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Debug:
-          PRODUCT_BUNDLE_IDENTIFIER: com.merimerimeri.RemindersRemote.Debug
+          PRODUCT_BUNDLE_IDENTIFIER: com.merimerimeri.TaskFerry.Debug
         Release-Direct:
-          INFOPLIST_FILE: RemindersRemote/Info-Direct.plist
-          CODE_SIGN_ENTITLEMENTS: RemindersRemote/RemindersRemote-Direct.entitlements
+          INFOPLIST_FILE: TaskFerry/Info-Direct.plist
+          CODE_SIGN_ENTITLEMENTS: TaskFerry/TaskFerry-Direct.entitlements
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: false
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) SPARKLE_ENABLED"
     scheme:
       archive:
         config: Release-Direct
       testTargets:
-        - RemindersRemoteTests
-  RemindersRemoteTests:
+        - TaskFerryTests
+  TaskFerryTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - RemindersRemoteTests
-      - RemindersRemote/Models/Models.swift
-      - RemindersRemote/Services/ReminderService.swift
-      - RemindersRemote/Services/DemoReminderService.swift
-      - RemindersRemote/Services/BridgeServer.swift
+      - TaskFerryTests
+      - TaskFerry/Models/Models.swift
+      - TaskFerry/Services/ReminderService.swift
+      - TaskFerry/Services/DemoReminderService.swift
+      - TaskFerry/Services/BridgeServer.swift
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.merimerimeri.RemindersRemoteTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.merimerimeri.TaskFerryTests
         GENERATE_INFOPLIST_FILE: true
         TEST_HOST: ""
