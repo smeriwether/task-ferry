@@ -66,6 +66,7 @@ xcrun stapler staple "$APP"
 cp -R "$APP" "$STAGING/Task Ferry.app"
 ln -s /Applications "$STAGING/Applications"
 hdiutil create -volname "Task Ferry" -srcfolder "$STAGING" -ov -format UDZO "$DMG"
+codesign --force --sign "Developer ID Application" --timestamp "$DMG"
 xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$DMG"
 
@@ -104,6 +105,8 @@ EOF
 
 cp "$DMG" "$BUILD_ROOT/TaskFerry.dmg"
 codesign --verify --deep --strict --verbose=2 "$APP"
+codesign --verify --strict --verbose=2 "$DMG"
+spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
 xcrun stapler validate "$APP"
 xcrun stapler validate "$DMG"
 
