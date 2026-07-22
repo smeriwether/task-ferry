@@ -1,6 +1,6 @@
-# Reminders Remote
+# Task Ferry
 
-A small, private macOS menu-bar app for using one Mac's Apple Reminders from another Mac. The same binary runs in either role:
+A small, private Mac app that ferries Apple Reminders between your personal and work Macs. The same binary runs in either role:
 
 - **Bridge** on the personal Mac mini: reads and writes Reminders with EventKit and serves one authenticated loopback endpoint.
 - **Remote client** on the work Mac: shows Today, Tomorrow, lists, reminders, and due dates through a Cloudflare Tunnel.
@@ -45,7 +45,7 @@ Run the eight host-independent core tests with `xcodebuild test` and the same ar
 For the safe sample UI used during development:
 
 ```sh
-REMINDERS_REMOTE_DEMO=1 .derivedData/Build/Products/Debug/RemindersRemote.app/Contents/MacOS/RemindersRemote
+REMINDERS_REMOTE_DEMO=1 .derivedData/Build/Products/Debug/TaskFerry.app/Contents/MacOS/TaskFerry
 ```
 
 Demo mode is in-memory and never requests Reminders access.
@@ -83,13 +83,13 @@ The current app intentionally supports only:
 - incomplete reminders: create, edit, complete, delete;
 - date-only and timed due dates;
 - Today (including overdue) and Tomorrow;
-- a quick-add field and list selection.
+- a menu-bar quick entry with list selection and None, Today, or Tomorrow due dates.
 
 It intentionally omits notes, tags, priorities, recurrence, attachments, shared-list administration, completed-history browsing, offline writes, and conflict merging. Since each change is immediately applied to EventKit and followed by a fresh snapshot, there is no second task database to reconcile.
 
 ## Distribution
 
-Reminders Remote is a regular Mac app: it has a main window, appears in the Dock, and uses the standard application menu for About, Settings, Hide, and Quit. The menu-bar item remains as a quick way to reach reminders.
+Task Ferry is a regular Mac app: it has a main window, appears in the Dock, and uses the standard application menu for About, Settings, Hide, and Quit. Its separate menu-bar item is a focused task-entry form.
 
 The `Release-Direct` configuration follows the MenuMines direct-distribution pattern: Hardened Runtime, Developer ID signing, Apple notarization, a drag-to-Applications DMG, and EdDSA-signed Sparkle updates. Debug and ordinary Release builds remain sandboxed; the direct build is not sandboxed so Sparkle can replace the installed app cleanly.
 
@@ -99,7 +99,7 @@ Create releases with:
 APPLE_TEAM_ID=YOUR_TEAM_ID scripts/release.sh 0.1.0
 ```
 
-The script uses the `RemindersRemote` notarization profile and the Sparkle private key in the login Keychain. It produces a versioned DMG, a stable `RemindersRemote.dmg`, an update ZIP, and `appcast.xml` under `build/release/`.
+The script uses the `RemindersRemote` notarization profile and the Sparkle private key in the login Keychain. It produces a versioned DMG, a stable `TaskFerry.dmg`, an update ZIP, and `appcast.xml` under `build/release/`.
 
 The included GitHub Actions workflow publishes those four files when a `v*` tag is pushed. It requires these repository secrets:
 

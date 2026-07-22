@@ -83,9 +83,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "v$VERSION" \
-            "build/release/RemindersRemote-$VERSION.dmg" \
-            "build/release/RemindersRemote.dmg" \
-            "build/release/RemindersRemote-$VERSION.zip" \
+            "build/release/TaskFerry-$VERSION.dmg" \
+            "build/release/TaskFerry.dmg" \
+            "build/release/TaskFerry-$VERSION.zip" \
             "build/release/appcast.xml" \
-            --title "Reminders Remote $VERSION" \
-            --notes "Download RemindersRemote.dmg and drag Reminders Remote to Applications."
+            --title "Task Ferry $VERSION" \
+            --notes "Download TaskFerry.dmg and drag Task Ferry to Applications."

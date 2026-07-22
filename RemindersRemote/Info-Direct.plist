@@ -11,9 +11,9 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Reminders Remote</string>
+	<string>Task Ferry</string>
 	<key>CFBundleDisplayName</key>
-	<string>Reminders Remote</string>
+	<string>Task Ferry</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -27,13 +27,13 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 MeriMeriMeri Software.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Reminders Remote uses your reminders to make them available through your private bridge.</string>
+	<string>Task Ferry uses your reminders to make them available through your private bridge.</string>
 	<key>NSRemindersUsageDescription</key>
-	<string>Reminders Remote uses your reminders to make them available through your private bridge.</string>
+	<string>Task Ferry uses your reminders to make them available through your private bridge.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
-	<string>https://github.com/MeriMeriMeri/reminders-remote/releases/latest/download/appcast.xml</string>
+	<string>https://github.com/smeriwether/task-ferry/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>TqzZIoTJ7EUsp9KlEEwfuOX2LKGg58sfVX1CldgAveg=</string>
 	<key>SUEnableAutomaticChecks</key>

@@ -297,7 +297,7 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.merimerimeri.RemindersRemote.Debug;
-				PRODUCT_NAME = RemindersRemote;
+				PRODUCT_NAME = TaskFerry;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -368,7 +368,7 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.merimerimeri.RemindersRemote;
-				PRODUCT_NAME = RemindersRemote;
+				PRODUCT_NAME = TaskFerry;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SPARKLE_ENABLED";
 			};
@@ -447,7 +447,7 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.merimerimeri.RemindersRemote;
-				PRODUCT_NAME = RemindersRemote;
+				PRODUCT_NAME = TaskFerry;
 				SDKROOT = macosx;
 			};
 			name = Release;

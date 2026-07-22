@@ -78,7 +78,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 480, height: 420)
-        .navigationTitle("Reminders Remote")
+        .navigationTitle("Task Ferry")
         .onAppear(perform: load)
         .task {
             launchAtLogin = await Task.detached(priority: .utility) {

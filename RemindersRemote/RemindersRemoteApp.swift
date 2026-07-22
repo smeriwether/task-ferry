@@ -10,13 +10,13 @@ struct RemindersRemoteApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Reminders Remote") {
+        WindowGroup("Task Ferry") {
             MenuRootView(state: state)
         }
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("About Reminders Remote") {
+                Button("About Task Ferry") {
                     NSApplication.shared.orderFrontStandardAboutPanel()
                 }
             }

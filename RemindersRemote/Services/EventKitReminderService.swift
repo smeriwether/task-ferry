@@ -34,7 +34,7 @@ final class EventKitReminderService: ReminderService {
                 throw ReminderServiceError.message("Reminders access was not granted.")
             }
         default:
-            throw ReminderServiceError.message("Allow Reminders Remote in System Settings → Privacy & Security → Reminders.")
+            throw ReminderServiceError.message("Allow Task Ferry in System Settings → Privacy & Security → Reminders.")
         }
     }
 

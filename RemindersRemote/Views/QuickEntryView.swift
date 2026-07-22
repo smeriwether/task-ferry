@@ -13,7 +13,7 @@ struct QuickEntryView: View {
                 .font(.headline)
 
             if state.mode == nil {
-                Text("Finish setup in the Reminders Remote window first.")
+                Text("Finish setup in the Task Ferry window first.")
                     .foregroundStyle(.secondary)
             } else if state.snapshot.lists.isEmpty {
                 ProgressView("Loading lists…")

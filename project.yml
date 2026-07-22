@@ -28,7 +28,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.merimerimeri.RemindersRemote
-        PRODUCT_NAME: RemindersRemote
+        PRODUCT_NAME: TaskFerry
         INFOPLIST_FILE: RemindersRemote/Info.plist
         CODE_SIGN_ENTITLEMENTS: RemindersRemote/RemindersRemote.entitlements
         GENERATE_INFOPLIST_FILE: false

@@ -16,7 +16,7 @@ EXPORT="$BUILD_ROOT/export"
 STAGING="$BUILD_ROOT/dmg"
 BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d%H%M)}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-RemindersRemote}"
-REPOSITORY="${GITHUB_REPOSITORY:-MeriMeriMeri/reminders-remote}"
+REPOSITORY="${GITHUB_REPOSITORY:-smeriwether/task-ferry}"
 
 rm -rf "$BUILD_ROOT"
 mkdir -p "$BUILD_ROOT" "$EXPORT" "$STAGING"
@@ -54,22 +54,22 @@ xcodebuild -exportArchive \
   -exportOptionsPlist "$EXPORT_OPTIONS" \
   -exportPath "$EXPORT"
 
-APP="$EXPORT/RemindersRemote.app"
-NOTARY_ZIP="$BUILD_ROOT/RemindersRemote-notarize.zip"
-DMG="$BUILD_ROOT/RemindersRemote-$VERSION.dmg"
-ZIP="$BUILD_ROOT/RemindersRemote-$VERSION.zip"
+APP="$EXPORT/TaskFerry.app"
+NOTARY_ZIP="$BUILD_ROOT/TaskFerry-notarize.zip"
+DMG="$BUILD_ROOT/TaskFerry-$VERSION.dmg"
+ZIP="$BUILD_ROOT/TaskFerry-$VERSION.zip"
 
 ditto -c -k --keepParent "$APP" "$NOTARY_ZIP"
 xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$APP"
 
-cp -R "$APP" "$STAGING/Reminders Remote.app"
+cp -R "$APP" "$STAGING/Task Ferry.app"
 ln -s /Applications "$STAGING/Applications"
-hdiutil create -volname "Reminders Remote" -srcfolder "$STAGING" -ov -format UDZO "$DMG"
+hdiutil create -volname "Task Ferry" -srcfolder "$STAGING" -ov -format UDZO "$DMG"
 xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$DMG"
 
-ditto -c -k --keepParent "$STAGING/Reminders Remote.app" "$ZIP"
+ditto -c -k --keepParent "$STAGING/Task Ferry.app" "$ZIP"
 SIGN_UPDATE="$(find "$SPM_CACHE/artifacts" -path '*/Sparkle/bin/sign_update' -type f -print -quit)"
 if [[ -n "${SPARKLE_PRIVATE_KEY_FILE:-}" ]]; then
   SIGN_OUTPUT="$("$SIGN_UPDATE" "$ZIP" --ed-key-file "$SPARKLE_PRIVATE_KEY_FILE")"
@@ -85,9 +85,9 @@ cat > "$BUILD_ROOT/appcast.xml" <<EOF
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>Reminders Remote Updates</title>
+    <title>Task Ferry Updates</title>
     <link>https://github.com/$REPOSITORY/releases</link>
-    <description>Reminders Remote updates</description>
+    <description>Task Ferry updates</description>
     <language>en</language>
     <item>
       <title>Version $VERSION</title>
@@ -95,17 +95,17 @@ cat > "$BUILD_ROOT/appcast.xml" <<EOF
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
       <description><![CDATA[$NOTES]]></description>
       <pubDate>$(date -u +"%a, %d %b %Y %H:%M:%S +0000")</pubDate>
-      <enclosure url="https://github.com/$REPOSITORY/releases/download/v$VERSION/RemindersRemote-$VERSION.zip" sparkle:edSignature="$SIGNATURE" length="$SIZE" type="application/octet-stream" />
+      <enclosure url="https://github.com/$REPOSITORY/releases/download/v$VERSION/TaskFerry-$VERSION.zip" sparkle:edSignature="$SIGNATURE" length="$SIZE" type="application/octet-stream" />
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
     </item>
   </channel>
 </rss>
 EOF
 
-cp "$DMG" "$BUILD_ROOT/RemindersRemote.dmg"
+cp "$DMG" "$BUILD_ROOT/TaskFerry.dmg"
 codesign --verify --deep --strict --verbose=2 "$APP"
 xcrun stapler validate "$APP"
 xcrun stapler validate "$DMG"
 
 printf 'Release artifacts:\n%s\n%s\n%s\n%s\n' \
-  "$DMG" "$BUILD_ROOT/RemindersRemote.dmg" "$ZIP" "$BUILD_ROOT/appcast.xml"
+  "$DMG" "$BUILD_ROOT/TaskFerry.dmg" "$ZIP" "$BUILD_ROOT/appcast.xml"
