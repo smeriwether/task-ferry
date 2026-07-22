@@ -69,16 +69,49 @@ Demo mode is in-memory and never requests Reminders access.
 
 ### 2. Cloudflare
 
-Create a production Cloudflare Tunnel with a published application route from your chosen hostname to `http://localhost:8788`. Cloudflare documents the [published-application route](https://developers.cloudflare.com/tunnel/setup/#publish-an-application) and supports running `cloudflared` as a [macOS launch agent](https://developers.cloudflare.com/tunnel/advanced/local-management/create-local-tunnel/).
+Create a production Cloudflare Tunnel on the personal Mac mini:
 
-Protect the hostname with a Cloudflare Access self-hosted application and a **Service Auth** policy. Create a service token for this app. The client sends the documented `CF-Access-Client-Id` and `CF-Access-Client-Secret` headers on every call; see [Cloudflare service tokens](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/).
+1. In the Cloudflare dashboard, go to **Networking → Tunnels**, create a tunnel, and select macOS.
+2. Run the installation command Cloudflare provides. It has this form:
 
-`cloudflared` should remain a separately supervised system service. The app does not embed tunnel credentials or manage Cloudflare resources.
+   ```sh
+   sudo cloudflared service install <TUNNEL_TOKEN>
+   ```
+
+3. Open the tunnel's **Routes** tab and add a **Published application** route with:
+   - Hostname: `reminders.merimerimeri.com`
+   - Service URL: `http://localhost:8788`
+4. If a DNS A or AAAA record already exists for `reminders.merimerimeri.com`, remove it before adding the route. Do not point the hostname at `127.0.0.1`, a private IP address, or the Mac mini's public IP. Saving the tunnel route creates the correct Cloudflare DNS record.
+
+Cloudflare documents the [published-application route](https://developers.cloudflare.com/tunnel/setup/#publish-an-application) and supports running `cloudflared` as a [macOS service](https://developers.cloudflare.com/tunnel/advanced/local-management/as-a-service/macos/). `cloudflared` should remain a separately supervised system service. The app does not embed tunnel credentials or manage Cloudflare resources.
+
+#### Public testing
+
+For initial testing, leave **Protect with Access** disabled on the tunnel route. The hostname will be publicly reachable, but the bridge still rejects requests that do not include Task Ferry's bearer token.
+
+On the remote Mac, leave the Cloudflare client ID and secret blank, enter `https://reminders.merimerimeri.com` as the Server URL, enter the bridge token from the Mac mini, and select **Save & Test**.
+
+#### Recommended Zero Trust protection
+
+For normal use, protect the hostname with Cloudflare Access:
+
+1. Go to **Zero Trust → Access controls → Service credentials → Service Tokens**.
+2. Create a service token named `Task Ferry Work Mac`. Copy both the Client ID and Client Secret; Cloudflare displays the secret only once.
+3. Go to **Access controls → Applications** and create a **Self-hosted and private** application.
+4. Add `reminders.merimerimeri.com` as its public hostname.
+5. Add an Access policy with:
+   - Action: **Service Auth**
+   - Include selector: **Service Token**
+   - Value: `Task Ferry Work Mac`
+6. Enable **401 Response for Service Auth policies**. On the tunnel's published application route, enable **Protect with Access** if that option is shown.
+7. On the remote Mac, enter the service token's Client ID and Client Secret in Task Ferry and select **Save & Test** again.
+
+Task Ferry sends the documented `CF-Access-Client-Id` and `CF-Access-Client-Secret` headers on every request when those fields are configured. Cloudflare Access and the bridge bearer token provide two independent authentication layers; see [Cloudflare service tokens](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/).
 
 ### 3. Work Mac
 
 1. Install the signed app and choose **Connect to my Mac mini**.
-2. Open Settings and enter the public HTTPS hostname, Cloudflare service-token ID and secret, and the bridge token from the Mac mini.
+2. Open Settings and enter the public HTTPS hostname and the bridge token from the Mac mini. If Cloudflare Access is enabled, also enter the service-token Client ID and Client Secret.
 3. Select **Save & Test**, then enable launch at login if desired.
 
 Secrets are stored in the macOS Keychain. Network requests use an ephemeral URL session with caching disabled.
