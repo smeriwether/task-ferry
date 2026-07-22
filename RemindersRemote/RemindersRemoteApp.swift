@@ -20,6 +20,9 @@ struct RemindersRemoteApp: App {
                     NSApplication.shared.orderFrontStandardAboutPanel()
                 }
             }
+            CommandGroup(after: .help) {
+                Link("Task Ferry Source & License", destination: URL(string: "https://github.com/smeriwether/task-ferry")!)
+            }
         }
 
         MenuBarExtra {

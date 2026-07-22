@@ -2,6 +2,14 @@
 
 A small, private Mac app that ferries Apple Reminders between your personal and work Macs. The same binary runs in either role:
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/task-ferry-main.png" alt="Task Ferry showing today's reminders" width="400">
+  <br>
+  <img src="docs/screenshots/task-ferry-quick-entry.png" alt="Task Ferry menu-bar quick entry" width="340">
+</p>
+
 - **Bridge** on the personal Mac mini: reads and writes Reminders with EventKit and serves one authenticated loopback endpoint.
 - **Remote client** on the work Mac: shows Today, Tomorrow, lists, reminders, and due dates through a Cloudflare Tunnel.
 
@@ -113,3 +121,7 @@ The included GitHub Actions workflow publishes those four files when a `v*` tag 
 Sparkle's `generate_keys` tool stores the private update key in the login Keychain. Export it once with `generate_keys -x <temporary-file>`, copy it directly into the `SPARKLE_PRIVATE_KEY` repository secret, and remove the temporary file immediately.
 
 The release repository must be publicly readable so a corporate Mac can download the DMG and Sparkle appcast without GitHub credentials. The Developer ID certificate and notarization credentials are the only pieces that cannot be created from source code.
+
+## License
+
+Copyright © 2026 MeriMeriMeri Software. Task Ferry is licensed under the [GNU Affero General Public License v3.0 only](LICENSE). Distributed modifications—and modified versions offered to users over a network—must make their corresponding source available under the same license. The license does not permit relicensing Task Ferry as a closed proprietary product.
