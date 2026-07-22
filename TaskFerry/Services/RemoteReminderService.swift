@@ -2,51 +2,60 @@ import Foundation
 
 @MainActor
 final class RemoteReminderService: ReminderService {
-    private let endpoint: URL
-    private let accessClientID: String
-    private let accessClientSecret: String
-    private let bridgeToken: String
+    private let configuration: RemoteConfiguration
     private let session: URLSession
 
-    init(endpoint: URL, accessClientID: String, accessClientSecret: String, bridgeToken: String) {
-        self.endpoint = endpoint
-        self.accessClientID = accessClientID
-        self.accessClientSecret = accessClientSecret
-        self.bridgeToken = bridgeToken
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.urlCache = nil
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        session = URLSession(configuration: configuration)
+    init(configuration: RemoteConfiguration, session: URLSession? = nil) {
+        self.configuration = configuration
+        self.session = session ?? Self.makeSession()
     }
 
     func execute(_ rpc: RPCRequest) async throws -> ReminderSnapshot {
-        let url = endpoint.appending(path: "v1/rpc")
+        let url = configuration.endpoint.appending(path: "v1/rpc")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.timeoutInterval = 30
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(bridgeToken)", forHTTPHeaderField: "Authorization")
-        if !accessClientID.isEmpty {
-            request.setValue(accessClientID, forHTTPHeaderField: "CF-Access-Client-Id")
+        request.setValue("Bearer \(configuration.bridgeToken)", forHTTPHeaderField: "Authorization")
+        if !configuration.accessClientID.isEmpty {
+            request.setValue(configuration.accessClientID, forHTTPHeaderField: "CF-Access-Client-Id")
         }
-        if !accessClientSecret.isEmpty {
-            request.setValue(accessClientSecret, forHTTPHeaderField: "CF-Access-Client-Secret")
+        if !configuration.accessClientSecret.isEmpty {
+            request.setValue(configuration.accessClientSecret, forHTTPHeaderField: "CF-Access-Client-Secret")
         }
         request.httpBody = try JSONEncoder().encode(rpc)
 
         let (data, response) = try await session.data(for: request)
+        return try Self.decode(data: data, response: response)
+    }
+
+    static func decode(data: Data, response: URLResponse) throws -> ReminderSnapshot {
         guard let http = response as? HTTPURLResponse else {
             throw ReminderServiceError.message("The bridge returned an invalid response.")
+        }
+        let decoded = try? JSONDecoder().decode(RPCResponse.self, from: data)
+        if let error = decoded?.error {
+            throw ReminderServiceError.message(error)
         }
         guard http.statusCode == 200 else {
             throw ReminderServiceError.message("The bridge returned HTTP \(http.statusCode).")
         }
-        let decoded = try JSONDecoder().decode(RPCResponse.self, from: data)
-        if let error = decoded.error {
-            throw ReminderServiceError.message(error)
+        guard let decoded else {
+            throw ReminderServiceError.message("The bridge returned invalid JSON.")
         }
         guard let snapshot = decoded.snapshot else {
             throw ReminderServiceError.message("The bridge response did not include reminders.")
         }
         return snapshot
+    }
+
+    private static func makeSession() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.timeoutIntervalForRequest = 30
+        configuration.timeoutIntervalForResource = 60
+        configuration.httpMaximumConnectionsPerHost = 2
+        return URLSession(configuration: configuration)
     }
 }

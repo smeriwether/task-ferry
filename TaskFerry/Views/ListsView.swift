@@ -4,11 +4,18 @@ struct ListsView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var state: AppState
     @State private var newListTitle = ""
+    @State private var isAddingList = false
 
     var body: some View {
         VStack(spacing: 0) {
             SubviewHeader(title: "Lists", dismiss: { dismiss() })
             Divider()
+
+            if let error = state.errorMessage {
+                ErrorBanner(message: error) { state.dismissError() }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+            }
 
             List {
                 ForEach(state.snapshot.lists) { list in
@@ -33,9 +40,10 @@ struct ListsView: View {
                 TextField("New list", text: $newListTitle)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(addList)
-                Button("Add", action: addList)
+                    .disabled(isAddingList)
+                Button(isAddingList ? "Adding…" : "Add", action: addList)
                     .buttonStyle(.borderless)
-                    .disabled(newListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(isAddingList || newListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(12)
             .background(.bar)
@@ -47,9 +55,14 @@ struct ListsView: View {
 
     private func addList() {
         let title = newListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        newListTitle = ""
-        Task { await state.createList(title: title) }
+        guard !title.isEmpty, !isAddingList else { return }
+        isAddingList = true
+        Task {
+            if await state.createList(title: title) {
+                newListTitle = ""
+            }
+            isAddingList = false
+        }
     }
 }
 
@@ -58,6 +71,7 @@ private struct ListDetailView: View {
     @Bindable var state: AppState
     let list: ReminderListRecord
     @State private var newTitle = ""
+    @State private var isAddingReminder = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -73,6 +87,12 @@ private struct ListDetailView: View {
                 .help("List settings")
             }
             Divider()
+
+            if let error = state.errorMessage {
+                ErrorBanner(message: error) { state.dismissError() }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+            }
 
             if reminders.isEmpty {
                 Spacer()
@@ -101,9 +121,10 @@ private struct ListDetailView: View {
                 TextField("New reminder", text: $newTitle)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(addReminder)
-                Button("Add", action: addReminder)
+                    .disabled(isAddingReminder)
+                Button(isAddingReminder ? "Adding…" : "Add", action: addReminder)
                     .buttonStyle(.borderless)
-                    .disabled(newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(isAddingReminder || newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(12)
             .background(.bar)
@@ -117,9 +138,14 @@ private struct ListDetailView: View {
 
     private func addReminder() {
         let title = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        newTitle = ""
-        Task { await state.createReminder(title: title, listID: list.id, due: nil) }
+        guard !title.isEmpty, !isAddingReminder else { return }
+        isAddingReminder = true
+        Task {
+            if await state.createReminder(title: title, listID: list.id, due: nil) {
+                newTitle = ""
+            }
+            isAddingReminder = false
+        }
     }
 }
 
@@ -165,6 +191,8 @@ private struct ListSettingsView: View {
     let list: ReminderListRecord
     @State private var title: String
     @State private var confirmingDelete = false
+    @State private var isSaving = false
+    @State private var isDeleting = false
 
     init(state: AppState, list: ReminderListRecord) {
         self.state = state
@@ -175,10 +203,16 @@ private struct ListSettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             SubviewHeader(title: "List Settings", dismiss: { dismiss() }) {
-                Button("Save", action: save)
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Button(isSaving ? "Saving…" : "Save", action: save)
+                    .disabled(isSaving || isDeleting || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             Divider()
+
+            if let error = state.errorMessage {
+                ErrorBanner(message: error) { state.dismissError() }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+            }
 
             Form {
                 Section("List") {
@@ -187,20 +221,28 @@ private struct ListSettingsView: View {
                 Section {
                     if confirmingDelete {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("Delete “\(list.title)” and its \(state.reminders(in: list.id).count) reminders?")
+                            Text("Delete “\(list.title)” and all of its reminders, including completed reminders?")
                             .font(.callout)
                             HStack {
                                 Button("Cancel") { confirmingDelete = false }
-                                Button("Delete", role: .destructive) {
+                                    .disabled(isDeleting)
+                                Button(isDeleting ? "Deleting…" : "Delete", role: .destructive) {
+                                    guard !isDeleting, !isSaving else { return }
+                                    isDeleting = true
                                     Task {
-                                        await state.deleteList(list)
-                                        dismiss()
+                                        if await state.deleteList(list) {
+                                            dismiss()
+                                        } else {
+                                            isDeleting = false
+                                        }
                                     }
                                 }
+                                .disabled(isDeleting || isSaving)
                             }
                         }
                     } else {
                         Button("Delete List", role: .destructive) { confirmingDelete = true }
+                            .disabled(isSaving)
                     }
                 }
             }
@@ -211,9 +253,15 @@ private struct ListSettingsView: View {
     }
 
     private func save() {
+        guard !isSaving, !isDeleting else { return }
+        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        isSaving = true
         Task {
-            await state.renameList(list, title: title)
-            dismiss()
+            if await state.renameList(list, title: cleanTitle) {
+                dismiss()
+            } else {
+                isSaving = false
+            }
         }
     }
 }

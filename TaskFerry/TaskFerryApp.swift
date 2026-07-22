@@ -68,7 +68,7 @@ final class TaskFerryApplicationDelegate: NSObject, NSApplicationDelegate {
 
     private var shouldRunHidden: Bool {
         guard ProcessInfo.processInfo.environment["TASK_FERRY_DEMO"] != "1" else { return false }
-        return UserDefaults.standard.string(forKey: "mode") == AppMode.bridge.rawValue
-            && UserDefaults.standard.bool(forKey: "runs-in-background")
+        return UserDefaults.standard.string(forKey: AppPreferences.mode) == AppMode.bridge.rawValue
+            && UserDefaults.standard.bool(forKey: AppPreferences.runsInBackground)
     }
 }

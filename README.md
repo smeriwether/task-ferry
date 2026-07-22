@@ -48,7 +48,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build \
   CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES
 ```
 
-Run the eight host-independent core tests with `xcodebuild test` and the same arguments.
+Run the host-independent core tests with `scripts/test.sh`. The same command is used by CI and every release build.
 
 For the safe sample UI used during development:
 
@@ -56,7 +56,7 @@ For the safe sample UI used during development:
 TASK_FERRY_DEMO=1 .derivedData/Build/Products/Debug/TaskFerry.app/Contents/MacOS/TaskFerry
 ```
 
-Demo mode is in-memory and never requests Reminders access.
+Demo mode is in-memory and never requests Reminders access. Set `TASK_FERRY_DEMO_ROLE=bridge` to verify the bridge UI safely.
 
 ## Personal setup
 
@@ -111,7 +111,7 @@ Task Ferry sends the documented `CF-Access-Client-Id` and `CF-Access-Client-Secr
 ### 3. Work Mac
 
 1. Install the signed app and choose **Connect to my Mac mini**.
-2. Open Settings and enter the public HTTPS hostname and the bridge token from the Mac mini. If Cloudflare Access is enabled, also enter the service-token Client ID and Client Secret.
+2. Open Settings and enter the public HTTPS hostname and the bridge token from the Mac mini. Task Ferry rejects non-HTTPS remote endpoints. If Cloudflare Access is enabled, enter both the service-token Client ID and Client Secret.
 3. Select **Save & Test**, then enable launch at login if desired.
 
 Secrets are stored in the macOS Keychain. Network requests use an ephemeral URL session with caching disabled.
@@ -130,7 +130,7 @@ It intentionally omits notes, tags, priorities, recurrence, attachments, shared-
 
 ## Distribution
 
-Task Ferry is a regular Mac app: it has a main window, appears in the Dock, and uses the standard application menu for About, Settings, Hide, and Quit. Its separate menu-bar item is a focused task-entry form.
+Task Ferry is a regular Mac app with a main window, standard application menu, and a focused menu-bar quick-entry form on remote clients. A bridge can optionally run in the background without a Dock icon; reopening Task Ferry from Applications restores its window.
 
 The `Release-Direct` configuration follows the MenuMines direct-distribution pattern: Hardened Runtime, Developer ID signing, Apple notarization, a drag-to-Applications DMG, and EdDSA-signed Sparkle updates. Debug and ordinary Release builds remain sandboxed; the direct build is not sandboxed so Sparkle can replace the installed app cleanly.
 

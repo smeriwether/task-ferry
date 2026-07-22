@@ -10,6 +10,8 @@ struct ReminderEditorView: View {
     @State private var dueDate: Date
     @State private var includesTime: Bool
     @State private var confirmingDelete = false
+    @State private var isSaving = false
+    @State private var isDeleting = false
 
     init(state: AppState, reminder: ReminderRecord?, defaultListID: String) {
         self.state = state
@@ -27,11 +29,17 @@ struct ReminderEditorView: View {
                 title: reminder == nil ? "New Reminder" : "Edit Reminder",
                 dismiss: { dismiss() }
             ) {
-                Button("Save", action: save)
+                Button(isSaving ? "Saving…" : "Save", action: save)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || listID.isEmpty)
+                    .disabled(isSaving || isDeleting || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || listID.isEmpty)
             }
             Divider()
+
+            if let error = state.errorMessage {
+                ErrorBanner(message: error) { state.dismissError() }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+            }
 
             Form {
                 Section("Reminder") {
@@ -77,35 +85,51 @@ struct ReminderEditorView: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button("Cancel") { confirmingDelete = false }
-                Button("Delete", role: .destructive, action: delete)
+                    .disabled(isDeleting)
+                Button(isDeleting ? "Deleting…" : "Delete", role: .destructive, action: delete)
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
+                    .disabled(isDeleting || isSaving)
             }
         } else {
             Button("Delete Reminder", role: .destructive) { confirmingDelete = true }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .disabled(isSaving)
         }
     }
 
     private func save() {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !isSaving, !isDeleting else { return }
+        let selectedListID = listID
+        let selectedDue = due
+        isSaving = true
         Task {
+            let succeeded: Bool
             if let reminder {
-                await state.updateReminder(reminder, title: cleanTitle, listID: listID, due: due)
+                succeeded = await state.updateReminder(reminder, title: cleanTitle, listID: selectedListID, due: selectedDue)
             } else {
-                await state.createReminder(title: cleanTitle, listID: listID, due: due)
+                succeeded = await state.createReminder(title: cleanTitle, listID: selectedListID, due: selectedDue)
             }
-            dismiss()
+            if succeeded {
+                dismiss()
+            } else {
+                isSaving = false
+            }
         }
     }
 
     private func delete() {
-        guard let reminder else { return }
+        guard let reminder, !isSaving, !isDeleting else { return }
+        isDeleting = true
         Task {
-            await state.deleteReminder(reminder)
-            dismiss()
+            if await state.deleteReminder(reminder) {
+                dismiss()
+            } else {
+                isDeleting = false
+            }
         }
     }
 }

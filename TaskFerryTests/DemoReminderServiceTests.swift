@@ -28,4 +28,37 @@ final class DemoReminderServiceTests: XCTestCase {
 
         XCTAssertFalse(updated.reminders.contains { $0.id == reminder.id })
     }
+
+    func testRejectsReminderForUnknownListLikeEventKitService() async throws {
+        let service = DemoReminderService()
+
+        do {
+            _ = try await service.execute(RPCRequest(
+                operation: .upsertReminder,
+                title: "Orphaned reminder",
+                listID: "missing-list"
+            ))
+            XCTFail("Expected the demo service to reject an unknown list")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "A reminder needs a title and editable list.")
+        }
+    }
+
+    func testRejectsUpdateForMissingReminderLikeEventKitService() async throws {
+        let service = DemoReminderService()
+        let snapshot = try await service.execute(.snapshot)
+        let listID = try XCTUnwrap(snapshot.lists.first?.id)
+
+        do {
+            _ = try await service.execute(RPCRequest(
+                operation: .upsertReminder,
+                id: "missing-reminder",
+                title: "Updated reminder",
+                listID: listID
+            ))
+            XCTFail("Expected the demo service to reject a missing reminder")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "That reminder changed elsewhere. Refresh and try again.")
+        }
+    }
 }

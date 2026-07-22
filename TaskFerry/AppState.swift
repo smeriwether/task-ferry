@@ -2,6 +2,13 @@ import AppKit
 import Foundation
 import Observation
 
+enum AppPreferences {
+    static let mode = "mode"
+    static let endpoint = "endpoint"
+    static let port = "port"
+    static let runsInBackground = "runs-in-background"
+}
+
 @MainActor
 @Observable
 final class AppState {
@@ -18,17 +25,16 @@ final class AppState {
         case failed(String)
     }
 
-    private enum DefaultsKey {
-        static let mode = "mode"
-        static let endpoint = "endpoint"
-        static let port = "port"
-        static let runsInBackground = "runs-in-background"
-    }
-
     private enum SecretKey {
         static let accessClientID = "access-client-id"
         static let accessClientSecret = "access-client-secret"
         static let bridgeToken = "bridge-token"
+    }
+
+    private enum ErrorSource: Equatable {
+        case refresh
+        case mutation
+        case configuration
     }
 
     var mode: AppMode?
@@ -39,41 +45,71 @@ final class AppState {
     var errorMessage: String?
     var runsInBackground: Bool
 
-    @ObservationIgnored private var service: (any ReminderService)?
+    @ObservationIgnored private let operations = ReminderOperationCoordinator()
     @ObservationIgnored private var bridge: BridgeServer?
     @ObservationIgnored private var isStarted = false
     @ObservationIgnored private var isRefreshing = false
+    @ObservationIgnored private var startTask: Task<Void, Never>?
+    @ObservationIgnored private var startGeneration = 0
     @ObservationIgnored private let isDemo: Bool
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let credentialStore: any CredentialStore
+    @ObservationIgnored private let serviceFactory: ReminderServiceFactory
+    @ObservationIgnored private var errorSource: ErrorSource?
+    @ObservationIgnored private var demoEndpoint = "https://reminders.merimerimeri.com"
+    @ObservationIgnored private var credentialsLoaded = false
+    private var cachedCredentials = StoredCredentials(accessClientID: "", accessClientSecret: "", bridgeToken: "")
 
     var endpoint: String {
-        get { UserDefaults.standard.string(forKey: DefaultsKey.endpoint) ?? "https://reminders.merimerimeri.com" }
-        set { UserDefaults.standard.set(newValue, forKey: DefaultsKey.endpoint) }
+        get { isDemo ? demoEndpoint : defaults.string(forKey: AppPreferences.endpoint) ?? "https://reminders.merimerimeri.com" }
+        set {
+            if isDemo {
+                demoEndpoint = newValue
+            } else {
+                defaults.set(newValue, forKey: AppPreferences.endpoint)
+            }
+        }
     }
 
     var port: UInt16 {
         get {
-            let stored = UserDefaults.standard.integer(forKey: DefaultsKey.port)
-            return stored > 0 ? UInt16(stored) : 8788
+            let stored = defaults.integer(forKey: AppPreferences.port)
+            return stored > 0 ? UInt16(exactly: stored) ?? 8788 : 8788
         }
-        set { UserDefaults.standard.set(Int(newValue), forKey: DefaultsKey.port) }
+        set { defaults.set(Int(newValue), forKey: AppPreferences.port) }
     }
 
-    var accessClientID: String { isDemo ? "" : KeychainStore.string(for: SecretKey.accessClientID) }
-    var accessClientSecret: String { isDemo ? "" : KeychainStore.string(for: SecretKey.accessClientSecret) }
-    var bridgeToken: String { isDemo ? "DEMO-DEMO-DEMO-DEMO-DEMO-DEMO" : KeychainStore.string(for: SecretKey.bridgeToken) }
+    var accessClientID: String { cachedCredentials.accessClientID }
+    var accessClientSecret: String { cachedCredentials.accessClientSecret }
+    var bridgeToken: String { cachedCredentials.bridgeToken }
 
-    init() {
-        isDemo = ProcessInfo.processInfo.environment["TASK_FERRY_DEMO"] == "1"
-        runsInBackground = isDemo ? false : UserDefaults.standard.bool(forKey: DefaultsKey.runsInBackground)
-        if isDemo {
+    init(
+        isDemo: Bool? = nil,
+        defaults: UserDefaults = .standard,
+        credentialStore: any CredentialStore = KeychainCredentialStore(),
+        serviceFactory: ReminderServiceFactory = .live
+    ) {
+        let demoMode = isDemo ?? (ProcessInfo.processInfo.environment["TASK_FERRY_DEMO"] == "1")
+        self.isDemo = demoMode
+        self.defaults = defaults
+        self.credentialStore = credentialStore
+        self.serviceFactory = serviceFactory
+        runsInBackground = demoMode ? false : defaults.bool(forKey: AppPreferences.runsInBackground)
+        if demoMode {
+            cachedCredentials = StoredCredentials(
+                accessClientID: "",
+                accessClientSecret: "",
+                bridgeToken: "DEMO-DEMO-DEMO-DEMO-DEMO-DEMO"
+            )
+            credentialsLoaded = true
             mode = ProcessInfo.processInfo.environment["TASK_FERRY_DEMO_ROLE"] == "bridge" ? .bridge : .remote
-            service = DemoReminderService()
+            operations.replaceService(DemoReminderService())
             isStarted = true
             connectionState = .connected
             if mode == .bridge {
                 bridgeState = .running(8788)
             }
-        } else if let value = UserDefaults.standard.string(forKey: DefaultsKey.mode),
+        } else if let value = defaults.string(forKey: AppPreferences.mode),
                   let savedMode = AppMode(rawValue: value) {
             mode = savedMode
         }
@@ -110,106 +146,157 @@ final class AppState {
         snapshot.lists.first { $0.id == id }
     }
 
-    func chooseMode(_ mode: AppMode) {
+    func chooseMode(_ mode: AppMode) async {
         self.mode = mode
-        UserDefaults.standard.set(mode.rawValue, forKey: DefaultsKey.mode)
-        isStarted = true
-        configureService(for: mode)
+        defaults.set(mode.rawValue, forKey: AppPreferences.mode)
         applyActivationPolicy()
+        await start()
     }
 
-    func start() {
+    func start() async {
         guard !isStarted, let mode else { return }
-        isStarted = true
-        configureService(for: mode)
+        if let startTask {
+            await startTask.value
+            return
+        }
+
+        startGeneration += 1
+        let generation = startGeneration
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.prepareService(for: mode, generation: generation)
+        }
+        startTask = task
+        await task.value
+        if startGeneration == generation {
+            startTask = nil
+        }
     }
 
     func resetMode() {
+        startGeneration += 1
+        startTask?.cancel()
+        startTask = nil
         bridge?.stop()
         bridge = nil
         bridgeState = .stopped
-        service = nil
+        operations.replaceService(nil)
         isStarted = false
         mode = nil
         snapshot = .empty
         connectionState = .idle
-        UserDefaults.standard.removeObject(forKey: DefaultsKey.mode)
+        clearError()
+        defaults.removeObject(forKey: AppPreferences.mode)
         applyActivationPolicy()
     }
 
-    func refresh(showLoadingIndicator: Bool = true) async {
-        guard !isRefreshing else { return }
+    @discardableResult
+    func refresh(showLoadingIndicator: Bool = true) async -> Bool {
+        guard !isRefreshing else { return connectionState == .connected }
         isRefreshing = true
         defer { isRefreshing = false }
-        start()
-        guard let service else { return }
+        await start()
         if showLoadingIndicator || snapshot == .empty {
             connectionState = .loading
         }
-        do {
-            snapshot = try await service.execute(.snapshot)
-            connectionState = .connected
-            errorMessage = nil
-        } catch {
-            connectionState = .failed(error.localizedDescription)
-            errorMessage = error.localizedDescription
+        let outcome = await operations.execute(.snapshot) { [weak self] outcome in
+            self?.apply(outcome, source: .refresh, clearAllErrorsOnSuccess: showLoadingIndicator)
         }
+        return outcome.succeeded
     }
 
-    func createReminder(title: String, listID: String, due: ReminderDue?) async {
+    @discardableResult
+    func createReminder(title: String, listID: String, due: ReminderDue?) async -> Bool {
         await perform(RPCRequest(operation: .upsertReminder, title: title, listID: listID, due: due))
     }
 
-    func updateReminder(_ reminder: ReminderRecord, title: String, listID: String, due: ReminderDue?) async {
+    @discardableResult
+    func updateReminder(_ reminder: ReminderRecord, title: String, listID: String, due: ReminderDue?) async -> Bool {
         await perform(RPCRequest(operation: .upsertReminder, id: reminder.id, title: title, listID: listID, due: due))
     }
 
-    func complete(_ reminder: ReminderRecord) async {
+    @discardableResult
+    func complete(_ reminder: ReminderRecord) async -> Bool {
         await perform(RPCRequest(operation: .setCompleted, id: reminder.id, completed: true))
     }
 
-    func deleteReminder(_ reminder: ReminderRecord) async {
+    @discardableResult
+    func deleteReminder(_ reminder: ReminderRecord) async -> Bool {
         await perform(RPCRequest(operation: .deleteReminder, id: reminder.id))
     }
 
-    func createList(title: String) async {
+    @discardableResult
+    func createList(title: String) async -> Bool {
         await perform(RPCRequest(operation: .upsertList, title: title))
     }
 
-    func renameList(_ list: ReminderListRecord, title: String) async {
+    @discardableResult
+    func renameList(_ list: ReminderListRecord, title: String) async -> Bool {
         await perform(RPCRequest(operation: .upsertList, id: list.id, title: title))
     }
 
-    func deleteList(_ list: ReminderListRecord) async {
+    @discardableResult
+    func deleteList(_ list: ReminderListRecord) async -> Bool {
         await perform(RPCRequest(operation: .deleteList, id: list.id))
     }
 
-    func saveRemoteConfiguration(endpoint: String, clientID: String, clientSecret: String, bridgeToken: String) throws {
-        self.endpoint = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
-        try KeychainStore.set(clientID.trimmingCharacters(in: .whitespacesAndNewlines), for: SecretKey.accessClientID)
-        try KeychainStore.set(clientSecret.trimmingCharacters(in: .whitespacesAndNewlines), for: SecretKey.accessClientSecret)
-        try KeychainStore.set(bridgeToken.trimmingCharacters(in: .whitespacesAndNewlines), for: SecretKey.bridgeToken)
+    func saveRemoteConfiguration(endpoint: String, clientID: String, clientSecret: String, bridgeToken: String) async throws {
+        let configuration = try RemoteConfiguration(
+            endpoint: endpoint,
+            accessClientID: clientID,
+            accessClientSecret: clientSecret,
+            bridgeToken: bridgeToken
+        )
+        if !isDemo {
+            let store = credentialStore
+            try await Task.detached(priority: .userInitiated) {
+                try store.setAtomically([
+                    (SecretKey.accessClientID, configuration.accessClientID),
+                    (SecretKey.accessClientSecret, configuration.accessClientSecret),
+                    (SecretKey.bridgeToken, configuration.bridgeToken)
+                ])
+            }.value
+        }
+        cachedCredentials = StoredCredentials(
+            accessClientID: configuration.accessClientID,
+            accessClientSecret: configuration.accessClientSecret,
+            bridgeToken: configuration.bridgeToken
+        )
+        credentialsLoaded = true
+        self.endpoint = configuration.endpoint.absoluteString
         if mode == .remote { configureService(for: .remote) }
     }
 
     func loadStoredCredentials() async -> StoredCredentials {
-        if isDemo {
-            return StoredCredentials(accessClientID: "", accessClientSecret: "", bridgeToken: bridgeToken)
-        }
-        return await Task.detached(priority: .utility) {
+        if isDemo || credentialsLoaded { return cachedCredentials }
+        let store = credentialStore
+        let credentials = await Task.detached(priority: .utility) {
             StoredCredentials(
-                accessClientID: KeychainStore.string(for: SecretKey.accessClientID),
-                accessClientSecret: KeychainStore.string(for: SecretKey.accessClientSecret),
-                bridgeToken: KeychainStore.string(for: SecretKey.bridgeToken)
+                accessClientID: store.string(for: SecretKey.accessClientID),
+                accessClientSecret: store.string(for: SecretKey.accessClientSecret),
+                bridgeToken: store.string(for: SecretKey.bridgeToken)
             )
         }.value
+        cachedCredentials = credentials
+        credentialsLoaded = true
+        return credentials
     }
 
     @discardableResult
-    func regenerateBridgeToken() throws -> String {
+    func regenerateBridgeToken() async throws -> String {
         if isDemo { return bridgeToken }
-        let token = try KeychainStore.randomToken()
-        try KeychainStore.set(token, for: SecretKey.bridgeToken)
+        let store = credentialStore
+        let token = try await Task.detached(priority: .userInitiated) {
+            let token = try store.randomToken()
+            try store.set(token, for: SecretKey.bridgeToken)
+            return token
+        }.value
+        cachedCredentials = StoredCredentials(
+            accessClientID: accessClientID,
+            accessClientSecret: accessClientSecret,
+            bridgeToken: token
+        )
+        credentialsLoaded = true
         if mode == .bridge { configureService(for: .bridge, bridgeTokenOverride: token) }
         return token
     }
@@ -217,9 +304,13 @@ final class AppState {
     func setRunsInBackground(_ enabled: Bool) {
         runsInBackground = enabled
         if !isDemo {
-            UserDefaults.standard.set(enabled, forKey: DefaultsKey.runsInBackground)
+            defaults.set(enabled, forKey: AppPreferences.runsInBackground)
         }
         applyActivationPolicy()
+    }
+
+    func dismissError() {
+        clearError()
     }
 
     func applyActivationPolicy() {
@@ -228,57 +319,120 @@ final class AppState {
         NSApplication.shared.setActivationPolicy(policy)
     }
 
+    private func prepareService(for mode: AppMode, generation: Int) async {
+        _ = await loadStoredCredentials()
+        guard startGeneration == generation, self.mode == mode, !Task.isCancelled else { return }
+
+        if mode == .bridge, bridgeToken.isEmpty {
+            do {
+                try await ensureBridgeToken()
+            } catch {
+                guard startGeneration == generation, self.mode == mode, !Task.isCancelled else { return }
+                configureService(for: mode)
+                setError(error.localizedDescription, source: .configuration)
+                isStarted = true
+                return
+            }
+        }
+
+        guard startGeneration == generation, self.mode == mode, !Task.isCancelled else { return }
+        configureService(for: mode)
+        isStarted = true
+    }
+
+    private func ensureBridgeToken() async throws {
+        guard bridgeToken.isEmpty else { return }
+        let store = credentialStore
+        let token = try await Task.detached(priority: .userInitiated) {
+            let token = try store.randomToken()
+            try store.set(token, for: SecretKey.bridgeToken)
+            return token
+        }.value
+        cachedCredentials = StoredCredentials(
+            accessClientID: accessClientID,
+            accessClientSecret: accessClientSecret,
+            bridgeToken: token
+        )
+        credentialsLoaded = true
+    }
+
     private func configureService(for mode: AppMode, bridgeTokenOverride: String? = nil) {
         bridge?.stop()
         bridge = nil
         switch mode {
         case .bridge:
-            let localService = EventKitReminderService()
-            service = localService
-            do {
-                var token = bridgeTokenOverride ?? bridgeToken
-                if token.isEmpty {
-                    token = try KeychainStore.randomToken()
-                    try KeychainStore.set(token, for: SecretKey.bridgeToken)
-                }
-                let server = BridgeServer(service: localService, token: token)
-                server.onStateChange = { [weak self] newState in
-                    Task { @MainActor in self?.bridgeState = newState }
-                }
-                server.start(port: port)
-                bridge = server
-            } catch {
-                connectionState = .failed(error.localizedDescription)
-                errorMessage = error.localizedDescription
-            }
-        case .remote:
-            guard let url = URL(string: endpoint), !bridgeToken.isEmpty else {
-                service = nil
-                connectionState = .idle
+            let localService = serviceFactory.makeBridgeService()
+            operations.replaceService(localService)
+            let token = bridgeTokenOverride ?? bridgeToken
+            guard !token.isEmpty else {
+                setError("Could not create a bridge token in Keychain.", source: .configuration)
                 return
             }
-            service = RemoteReminderService(
-                endpoint: url,
-                accessClientID: accessClientID,
-                accessClientSecret: accessClientSecret,
-                bridgeToken: bridgeToken
-            )
+            let server = serviceFactory.makeBridgeServer(localService, token)
+            server.onStateChange = { [weak self] newState in
+                self?.bridgeState = newState
+            }
+            server.start(port: port)
+            bridge = server
+            if errorSource == .configuration { clearError() }
+        case .remote:
+            do {
+                let configuration = try RemoteConfiguration(
+                    endpoint: endpoint,
+                    accessClientID: accessClientID,
+                    accessClientSecret: accessClientSecret,
+                    bridgeToken: bridgeToken
+                )
+                operations.replaceService(serviceFactory.makeRemoteService(configuration))
+                connectionState = .idle
+                if errorSource == .configuration { clearError() }
+            } catch {
+                operations.replaceService(nil)
+                connectionState = .idle
+                setError(error.localizedDescription, source: .configuration)
+            }
         }
     }
 
-    private func perform(_ request: RPCRequest) async {
-        guard let service else {
-            errorMessage = "Finish configuring the remote connection in Settings."
-            return
+    private func perform(_ request: RPCRequest) async -> Bool {
+        let outcome = await operations.execute(request) { [weak self] outcome in
+            self?.apply(outcome, source: .mutation, clearAllErrorsOnSuccess: true)
         }
-        do {
-            snapshot = try await service.execute(request)
+        return outcome.succeeded
+    }
+
+    private func apply(
+        _ outcome: ReminderOperationCoordinator.Outcome,
+        source: ErrorSource,
+        clearAllErrorsOnSuccess: Bool
+    ) {
+        switch outcome {
+        case .success(let snapshot):
+            self.snapshot = snapshot
             connectionState = .connected
-            errorMessage = nil
-        } catch {
-            connectionState = .failed(error.localizedDescription)
-            errorMessage = error.localizedDescription
+            if clearAllErrorsOnSuccess || errorSource == source {
+                clearError()
+            }
+        case .failure(let message):
+            connectionState = .failed(message)
+            setError(message, source: source)
+        case .unavailable:
+            connectionState = .idle
+            setError("Finish configuring the remote connection in Settings.", source: .configuration)
+        case .superseded:
+            break
         }
+    }
+
+    private func setError(_ message: String, source: ErrorSource) {
+        connectionState = .failed(message)
+        errorMessage = message
+        errorSource = source
+    }
+
+    private func clearError() {
+        errorMessage = nil
+        errorSource = nil
     }
 
     private func sortReminders(_ lhs: ReminderRecord, _ rhs: ReminderRecord) -> Bool {

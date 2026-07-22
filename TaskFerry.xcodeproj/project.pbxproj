@@ -19,20 +19,34 @@
 		2DE89CA26E323292ADBAC168 /* BridgeServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FD37A1518CA6BC6C91462F0 /* BridgeServer.swift */; };
 		331D68E426A507C9820BB001 /* BridgeTokenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAF8E926CF285ABECAE72C01 /* BridgeTokenTests.swift */; };
 		345B0169000F29C43930EDCD /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 089F88EF1D818C5FAA3BCBED /* Models.swift */; };
+		3536FB1D4DC136361C402B0A /* CredentialStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD6BCBB679D119D6A82AFD5 /* CredentialStoreTests.swift */; };
 		385A5F1D577D4B3156E0A10F /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC41129763EBE01D6A625BBD /* ReminderService.swift */; };
 		42941DCF8A89F95A7A5F41BD /* DemoReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2DD54FA0E8DB25016F0009 /* DemoReminderService.swift */; };
 		4EAC55537DF9CE105F6647E6 /* QuickEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B65434108D6E8108BD12A74 /* QuickEntryView.swift */; };
 		5315BF8EB1A3E531F71BBFE5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B236A4AD5F5AFF69F2FA19 /* KeychainStore.swift */; };
+		55C7A0722A9A58FF97E6C702 /* RemoteConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F507EC0C94EEC57C2551AB71 /* RemoteConfiguration.swift */; };
+		577B7095F8D46939D2093AA7 /* RemoteConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAEB6CE963CBCE4C64D6BD6 /* RemoteConfigurationTests.swift */; };
 		5A9EC5E9DA55369530B6B4C3 /* ListsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B23E85BC6AE98E43816C69 /* ListsView.swift */; };
 		60139F50181F73F7F9C34D5B /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A48421F551E6D43793CFE8E /* UpdateManager.swift */; };
+		611CA3FB9E6CA3C3D09A43E2 /* ReminderOperationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6988989C67F49EDDEF55A2 /* ReminderOperationCoordinator.swift */; };
 		751AEF40ABC428A4188B7108 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 9BDB648E3C2CA1E7A4CC907B /* Sparkle */; };
 		759C0A0C64285C39BA1C8E61 /* ProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A142AD5432BD3D7F07A8768 /* ProtocolTests.swift */; };
 		76C95316DC0973F18C5790E0 /* RemoteReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A35921E8BB4328C52C89308 /* RemoteReminderService.swift */; };
 		7DC03AD5AD1C39CBA4D1CE74 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7850D8573A89B198AFD83E /* AppState.swift */; };
+		83F9F9BBC2AE59F4CD0F5A01 /* ReminderOperationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6988989C67F49EDDEF55A2 /* ReminderOperationCoordinator.swift */; };
 		9032C35F6E06A12A8ADD629C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C890C6B4795075390038A326 /* SettingsView.swift */; };
+		971DD854DD2C55F0E7F8A32F /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 439D6E88D4070EB863DD8279 /* CredentialStore.swift */; };
+		A12E488D755416D3440C41C5 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7850D8573A89B198AFD83E /* AppState.swift */; };
+		AAA32510EFAD3A5287839414 /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 439D6E88D4070EB863DD8279 /* CredentialStore.swift */; };
 		C61908B77BF3ADEC599B2915 /* DemoReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2DD54FA0E8DB25016F0009 /* DemoReminderService.swift */; };
+		CB7199DBB8559C40A5B7E28B /* RemoteResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F6088535CD32B9C816E9F2B /* RemoteResponseTests.swift */; };
 		D48C3A3DEDFEF7DB8B6EAB80 /* ReminderDueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9BAB42F919A6F4DDE3F4D6 /* ReminderDueTests.swift */; };
+		E01CC0B263CFE3D76956CF34 /* EventKitReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E81B612719438FCA73F950 /* EventKitReminderService.swift */; };
+		E8B654C2DB0AC36967245EBB /* ReminderOperationCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15D7D2F904CFB4AD3407593 /* ReminderOperationCoordinatorTests.swift */; };
+		EE6D3B8D0B7E2FE25C0512BE /* RemoteReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A35921E8BB4328C52C89308 /* RemoteReminderService.swift */; };
 		EEA9FF5882EED6956073BFE0 /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC41129763EBE01D6A625BBD /* ReminderService.swift */; };
+		F3D28366C540A872F5CB4D06 /* AppStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38E8840EF7BFF9853B10184D /* AppStateTests.swift */; };
+		F47299184C2F870E0B03566F /* RemoteConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F507EC0C94EEC57C2551AB71 /* RemoteConfiguration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,18 +54,25 @@
 		089F88EF1D818C5FAA3BCBED /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		0A142AD5432BD3D7F07A8768 /* ProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolTests.swift; sourceTree = "<group>"; };
 		0A48421F551E6D43793CFE8E /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
+		1F6088535CD32B9C816E9F2B /* RemoteResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteResponseTests.swift; sourceTree = "<group>"; };
 		2FD37A1518CA6BC6C91462F0 /* BridgeServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeServer.swift; sourceTree = "<group>"; };
 		38D57A550FC237BC4319BCC7 /* TaskFerryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TaskFerryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		38E8840EF7BFF9853B10184D /* AppStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTests.swift; sourceTree = "<group>"; };
 		3B0CAE150460FCEF57F1476C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3CAEB6CE963CBCE4C64D6BD6 /* RemoteConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConfigurationTests.swift; sourceTree = "<group>"; };
+		439D6E88D4070EB863DD8279 /* CredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialStore.swift; sourceTree = "<group>"; };
 		5BF6290C6B74AEC75C990D52 /* MenuRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuRootView.swift; sourceTree = "<group>"; };
 		65B23E85BC6AE98E43816C69 /* ListsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListsView.swift; sourceTree = "<group>"; };
 		6CE2147564AB064353F50CA0 /* TaskFerry.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TaskFerry.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A35921E8BB4328C52C89308 /* RemoteReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteReminderService.swift; sourceTree = "<group>"; };
 		7C7F811C8F527C18E0C0ACFF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8B65434108D6E8108BD12A74 /* QuickEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickEntryView.swift; sourceTree = "<group>"; };
+		9F6988989C67F49EDDEF55A2 /* ReminderOperationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderOperationCoordinator.swift; sourceTree = "<group>"; };
 		A61CE4D480A804C09D970DAB /* Info-Direct.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Info-Direct.plist"; sourceTree = "<group>"; };
 		AC41129763EBE01D6A625BBD /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
+		B15D7D2F904CFB4AD3407593 /* ReminderOperationCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderOperationCoordinatorTests.swift; sourceTree = "<group>"; };
 		B3992FA5AD11BDDB7451510F /* ReminderEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEditorView.swift; sourceTree = "<group>"; };
+		BCD6BCBB679D119D6A82AFD5 /* CredentialStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialStoreTests.swift; sourceTree = "<group>"; };
 		C6CB77C66C0D9D02A5CE4FBD /* TaskFerryApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFerryApp.swift; sourceTree = "<group>"; };
 		C890C6B4795075390038A326 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		CE2DD54FA0E8DB25016F0009 /* DemoReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoReminderService.swift; sourceTree = "<group>"; };
@@ -61,6 +82,7 @@
 		DC9BAB42F919A6F4DDE3F4D6 /* ReminderDueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderDueTests.swift; sourceTree = "<group>"; };
 		EB0F14CB5D185CF4FAC95DFA /* TaskFerry-Direct.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "TaskFerry-Direct.entitlements"; sourceTree = "<group>"; };
 		EB3A64D3DB7D0A3BA9578886 /* TaskFerry.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TaskFerry.entitlements; sourceTree = "<group>"; };
+		F507EC0C94EEC57C2551AB71 /* RemoteConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConfiguration.swift; sourceTree = "<group>"; };
 		FAF8E926CF285ABECAE72C01 /* BridgeTokenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeTokenTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -79,10 +101,15 @@
 		02E6F38D4C201F7FA7088D17 /* TaskFerryTests */ = {
 			isa = PBXGroup;
 			children = (
+				38E8840EF7BFF9853B10184D /* AppStateTests.swift */,
 				FAF8E926CF285ABECAE72C01 /* BridgeTokenTests.swift */,
+				BCD6BCBB679D119D6A82AFD5 /* CredentialStoreTests.swift */,
 				0862A6022F701A784D25BD47 /* DemoReminderServiceTests.swift */,
 				0A142AD5432BD3D7F07A8768 /* ProtocolTests.swift */,
 				DC9BAB42F919A6F4DDE3F4D6 /* ReminderDueTests.swift */,
+				B15D7D2F904CFB4AD3407593 /* ReminderOperationCoordinatorTests.swift */,
+				3CAEB6CE963CBCE4C64D6BD6 /* RemoteConfigurationTests.swift */,
+				1F6088535CD32B9C816E9F2B /* RemoteResponseTests.swift */,
 			);
 			path = TaskFerryTests;
 			sourceTree = "<group>";
@@ -138,6 +165,7 @@
 			isa = PBXGroup;
 			children = (
 				089F88EF1D818C5FAA3BCBED /* Models.swift */,
+				F507EC0C94EEC57C2551AB71 /* RemoteConfiguration.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -146,9 +174,11 @@
 			isa = PBXGroup;
 			children = (
 				2FD37A1518CA6BC6C91462F0 /* BridgeServer.swift */,
+				439D6E88D4070EB863DD8279 /* CredentialStore.swift */,
 				CE2DD54FA0E8DB25016F0009 /* DemoReminderService.swift */,
 				D0E81B612719438FCA73F950 /* EventKitReminderService.swift */,
 				D4B236A4AD5F5AFF69F2FA19 /* KeychainStore.swift */,
+				9F6988989C67F49EDDEF55A2 /* ReminderOperationCoordinator.swift */,
 				AC41129763EBE01D6A625BBD /* ReminderService.swift */,
 				7A35921E8BB4328C52C89308 /* RemoteReminderService.swift */,
 				0A48421F551E6D43793CFE8E /* UpdateManager.swift */,
@@ -254,6 +284,7 @@
 			files = (
 				7DC03AD5AD1C39CBA4D1CE74 /* AppState.swift in Sources */,
 				2DE89CA26E323292ADBAC168 /* BridgeServer.swift in Sources */,
+				AAA32510EFAD3A5287839414 /* CredentialStore.swift in Sources */,
 				C61908B77BF3ADEC599B2915 /* DemoReminderService.swift in Sources */,
 				125DA0BE7D79D586EF8F4AD8 /* EventKitReminderService.swift in Sources */,
 				1AF06B81E5CD3ED2288CC848 /* KeychainStore.swift in Sources */,
@@ -262,7 +293,9 @@
 				1038DA6E95E524F84B539FB9 /* Models.swift in Sources */,
 				4EAC55537DF9CE105F6647E6 /* QuickEntryView.swift in Sources */,
 				1141076F69A6BE9F85CA4B04 /* ReminderEditorView.swift in Sources */,
+				611CA3FB9E6CA3C3D09A43E2 /* ReminderOperationCoordinator.swift in Sources */,
 				385A5F1D577D4B3156E0A10F /* ReminderService.swift in Sources */,
+				55C7A0722A9A58FF97E6C702 /* RemoteConfiguration.swift in Sources */,
 				76C95316DC0973F18C5790E0 /* RemoteReminderService.swift in Sources */,
 				9032C35F6E06A12A8ADD629C /* SettingsView.swift in Sources */,
 				03D85DB50A0167E0E0361009 /* TaskFerryApp.swift in Sources */,
@@ -274,15 +307,26 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A12E488D755416D3440C41C5 /* AppState.swift in Sources */,
+				F3D28366C540A872F5CB4D06 /* AppStateTests.swift in Sources */,
 				019DA8B69F9303A895B4E5A5 /* BridgeServer.swift in Sources */,
 				331D68E426A507C9820BB001 /* BridgeTokenTests.swift in Sources */,
+				971DD854DD2C55F0E7F8A32F /* CredentialStore.swift in Sources */,
+				3536FB1D4DC136361C402B0A /* CredentialStoreTests.swift in Sources */,
 				42941DCF8A89F95A7A5F41BD /* DemoReminderService.swift in Sources */,
 				2758D8D63208F994FB8C4218 /* DemoReminderServiceTests.swift in Sources */,
+				E01CC0B263CFE3D76956CF34 /* EventKitReminderService.swift in Sources */,
 				5315BF8EB1A3E531F71BBFE5 /* KeychainStore.swift in Sources */,
 				345B0169000F29C43930EDCD /* Models.swift in Sources */,
 				759C0A0C64285C39BA1C8E61 /* ProtocolTests.swift in Sources */,
 				D48C3A3DEDFEF7DB8B6EAB80 /* ReminderDueTests.swift in Sources */,
+				83F9F9BBC2AE59F4CD0F5A01 /* ReminderOperationCoordinator.swift in Sources */,
+				E8B654C2DB0AC36967245EBB /* ReminderOperationCoordinatorTests.swift in Sources */,
 				EEA9FF5882EED6956073BFE0 /* ReminderService.swift in Sources */,
+				F47299184C2F870E0B03566F /* RemoteConfiguration.swift in Sources */,
+				577B7095F8D46939D2093AA7 /* RemoteConfigurationTests.swift in Sources */,
+				EE6D3B8D0B7E2FE25C0512BE /* RemoteReminderService.swift in Sources */,
+				CB7199DBB8559C40A5B7E28B /* RemoteResponseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -337,13 +381,15 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.2;
+				MARKETING_VERSION = 0.1.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -413,13 +459,15 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.2;
+				MARKETING_VERSION = 0.1.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = "Release-Direct";
@@ -571,7 +619,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.2;
+				MARKETING_VERSION = 0.1.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -579,6 +627,8 @@
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;

@@ -12,6 +12,8 @@ struct SettingsView: View {
     @State private var launchAtLogin = false
     @State private var launchAtLoginLoaded = false
     @State private var launchAtLoginUpdating = false
+    @State private var connectionSaving = false
+    @State private var tokenGenerating = false
     @State private var message: String?
 
     var body: some View {
@@ -29,8 +31,11 @@ struct SettingsView: View {
             if state.mode == .remote {
                 Section("Connection") {
                     TextField("Server URL", text: $endpoint)
+                        .disabled(connectionSaving)
                     TextField("Cloudflare client ID", text: $clientID)
+                        .disabled(connectionSaving)
                     SecureField("Cloudflare client secret", text: $clientSecret)
+                        .disabled(connectionSaving)
                     HStack {
                         if bridgeTokenRevealed {
                             TextField("Bridge token", text: $bridgeToken)
@@ -45,12 +50,20 @@ struct SettingsView: View {
                         .buttonStyle(.borderless)
                         .help(bridgeTokenRevealed ? "Hide bridge token" : "Show bridge token")
                     }
+                    .disabled(connectionSaving)
                     HStack {
-                        Button("Save") { saveRemote() }
-                        Button("Save & Test") {
-                            saveRemote()
-                            Task { await state.refresh() }
+                        Button(connectionSaving ? "Saving…" : "Save") {
+                            Task { _ = await saveRemote() }
                         }
+                        .disabled(connectionSaving)
+                        Button("Save & Test") {
+                            Task {
+                                if await saveRemote() {
+                                    await state.refresh()
+                                }
+                            }
+                        }
+                        .disabled(connectionSaving)
                     }
                 }
             } else if state.mode == .bridge {
@@ -76,14 +89,20 @@ struct SettingsView: View {
                     Text("New tokens use six short, unambiguous groups for easier typing.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Button("Generate New Token") {
-                        do {
-                            bridgeToken = try state.regenerateBridgeToken()
-                            message = "A new easy-to-type bridge token is ready."
-                        } catch {
-                            message = error.localizedDescription
+                    Button(tokenGenerating ? "Generating…" : "Generate New Token") {
+                        guard !tokenGenerating else { return }
+                        tokenGenerating = true
+                        Task {
+                            do {
+                                bridgeToken = try await state.regenerateBridgeToken()
+                                message = "A new easy-to-type bridge token is ready."
+                            } catch {
+                                message = error.localizedDescription
+                            }
+                            tokenGenerating = false
                         }
                     }
+                    .disabled(tokenGenerating)
                 }
 
                 Section("Background") {
@@ -129,11 +148,11 @@ struct SettingsView: View {
             async let launchAtLoginStatus = Task.detached(priority: .utility) {
                 SMAppService.mainApp.status == .enabled
             }.value
-            launchAtLoginLoaded = true
             let currentLaunchAtLogin = await launchAtLoginStatus
             if !launchAtLoginUpdating {
                 launchAtLogin = currentLaunchAtLogin
             }
+            launchAtLoginLoaded = true
             let credentials = await storedCredentials
             clientID = credentials.accessClientID
             clientSecret = credentials.accessClientSecret
@@ -141,17 +160,22 @@ struct SettingsView: View {
         }
     }
 
-    private func saveRemote() {
+    private func saveRemote() async -> Bool {
+        guard !connectionSaving else { return false }
+        connectionSaving = true
+        defer { connectionSaving = false }
         do {
-            try state.saveRemoteConfiguration(
+            try await state.saveRemoteConfiguration(
                 endpoint: endpoint,
                 clientID: clientID,
                 clientSecret: clientSecret,
                 bridgeToken: bridgeToken
             )
             message = "Connection saved securely."
+            return true
         } catch {
             message = error.localizedDescription
+            return false
         }
     }
 

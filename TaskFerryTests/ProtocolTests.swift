@@ -52,5 +52,32 @@ final class ProtocolTests: XCTestCase {
     func testHTTPRequestRejectsChunkedBodies() {
         let request = Data("POST /v1/rpc HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n".utf8)
         XCTAssertNil(HTTPRequest.parse(request))
+        guard case .malformed = HTTPRequest.parseResult(request) else {
+            return XCTFail("Expected an immediately malformed request")
+        }
+    }
+
+    func testHTTPRequestRejectsDuplicateContentLength() {
+        let request = Data("POST /v1/rpc HTTP/1.1\r\nContent-Length: 0\r\nContent-Length: 0\r\n\r\n".utf8)
+
+        guard case .malformed = HTTPRequest.parseResult(request) else {
+            return XCTFail("Expected duplicate framing headers to be rejected")
+        }
+    }
+
+    func testHTTPRequestRejectsTrailingBytes() {
+        let request = Data("POST /v1/rpc HTTP/1.1\r\nContent-Length: 0\r\n\r\nextra".utf8)
+
+        guard case .malformed = HTTPRequest.parseResult(request) else {
+            return XCTFail("Expected trailing bytes to be rejected")
+        }
+    }
+
+    func testHTTPRequestRejectsOversizedBodyBeforeReadingIt() {
+        let request = Data("POST /v1/rpc HTTP/1.1\r\nContent-Length: \(HTTPRequest.maximumBodyBytes + 1)\r\n\r\n".utf8)
+
+        guard case .tooLarge = HTTPRequest.parseResult(request) else {
+            return XCTFail("Expected an oversized body declaration to be rejected")
+        }
     }
 }

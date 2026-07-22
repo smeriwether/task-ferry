@@ -45,9 +45,9 @@ final class EventKitReminderService: ReminderService {
             ending: nil,
             calendars: calendars
         )
-        let reminders: [EKReminder] = await withCheckedContinuation { continuation in
+        let reminderRecords: [ReminderRecord] = await withCheckedContinuation { continuation in
             store.fetchReminders(matching: predicate) { reminders in
-                continuation.resume(returning: reminders ?? [])
+                continuation.resume(returning: (reminders ?? []).compactMap(Self.record))
             }
         }
 
@@ -59,7 +59,7 @@ final class EventKitReminderService: ReminderService {
                     colorHex: Self.colorHex(calendar.cgColor)
                 )
             }.sorted(by: Self.sortLists),
-            reminders: reminders.compactMap(Self.record),
+            reminders: reminderRecords,
             defaultListID: store.defaultCalendarForNewReminders()?.calendarIdentifier
         )
     }

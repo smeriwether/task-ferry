@@ -33,21 +33,33 @@ final class DemoReminderService: ReminderService {
             guard let title = request.title?.trimmed, !title.isEmpty else {
                 throw ReminderServiceError.message("A list needs a name.")
             }
-            if let id = request.id, let index = value.lists.firstIndex(where: { $0.id == id }) {
+            if let id = request.id {
+                guard let index = value.lists.firstIndex(where: { $0.id == id }) else {
+                    throw ReminderServiceError.message("That list is no longer editable.")
+                }
                 value.lists[index].title = title
             } else {
                 value.lists.append(ReminderListRecord(id: UUID().uuidString, title: title, colorHex: "30D158"))
             }
         case .deleteList:
-            guard let id = request.id else { break }
+            guard let id = request.id, value.lists.contains(where: { $0.id == id }) else {
+                throw ReminderServiceError.message("That list is no longer editable.")
+            }
             value.lists.removeAll { $0.id == id }
             value.reminders.removeAll { $0.listID == id }
+            if value.defaultListID == id {
+                value.defaultListID = value.lists.first?.id
+            }
         case .upsertReminder:
             guard let title = request.title?.trimmed, !title.isEmpty,
-                  let listID = request.listID else {
-                throw ReminderServiceError.message("A reminder needs a title and list.")
+                  let listID = request.listID,
+                  value.lists.contains(where: { $0.id == listID }) else {
+                throw ReminderServiceError.message("A reminder needs a title and editable list.")
             }
-            if let id = request.id, let index = value.reminders.firstIndex(where: { $0.id == id }) {
+            if let id = request.id {
+                guard let index = value.reminders.firstIndex(where: { $0.id == id }) else {
+                    throw ReminderServiceError.message("That reminder changed elsewhere. Refresh and try again.")
+                }
                 value.reminders[index].title = title
                 value.reminders[index].listID = listID
                 value.reminders[index].due = request.due
@@ -60,13 +72,17 @@ final class DemoReminderService: ReminderService {
                 ))
             }
         case .setCompleted:
-            if request.completed == true, let id = request.id {
+            guard let id = request.id, value.reminders.contains(where: { $0.id == id }) else {
+                throw ReminderServiceError.message("That reminder changed elsewhere. Refresh and try again.")
+            }
+            if request.completed == true {
                 value.reminders.removeAll { $0.id == id }
             }
         case .deleteReminder:
-            if let id = request.id {
-                value.reminders.removeAll { $0.id == id }
+            guard let id = request.id, value.reminders.contains(where: { $0.id == id }) else {
+                throw ReminderServiceError.message("That reminder changed elsewhere. Refresh and try again.")
             }
+            value.reminders.removeAll { $0.id == id }
         }
         value.lists.sort { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         return value

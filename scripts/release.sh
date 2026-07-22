@@ -28,6 +28,8 @@ xcodebuild -resolvePackageDependencies \
   -scheme TaskFerry \
   -clonedSourcePackagesDirPath "$SPM_CACHE"
 
+TASK_FERRY_SPM_CACHE="$SPM_CACHE" scripts/test.sh "$BUILD_ROOT/TestDerivedData"
+
 xcodebuild clean archive \
   -project TaskFerry.xcodeproj \
   -scheme TaskFerry \

@@ -4,6 +4,7 @@ import Foundation
 import Sparkle
 #endif
 
+@MainActor
 enum UpdateManager {
     #if SPARKLE_ENABLED
     private static let controller = SPUStandardUpdaterController(

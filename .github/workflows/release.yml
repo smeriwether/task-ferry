@@ -88,4 +88,4 @@ jobs:
             "build/release/TaskFerry-$VERSION.zip" \
             "build/release/appcast.xml" \
             --title "Task Ferry $VERSION" \
-            --notes "Download TaskFerry.dmg and drag Task Ferry to Applications."
+            --notes "Reliability, security, and test coverage improvements. Download TaskFerry.dmg and drag Task Ferry to Applications."

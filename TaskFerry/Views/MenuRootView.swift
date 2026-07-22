@@ -22,7 +22,7 @@ struct MenuRootView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .background(WindowMinimumSize(width: 400, height: 540))
         .task {
-            state.start()
+            await state.start()
             state.applyActivationPolicy()
         }
         .onChange(of: scenePhase) { _, phase in
@@ -114,7 +114,7 @@ private struct SetupView: View {
 
     private func modeButton(title: String, subtitle: String, symbol: String, mode: AppMode) -> some View {
         Button {
-            state.chooseMode(mode)
+            Task { await state.chooseMode(mode) }
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: symbol)
@@ -179,7 +179,7 @@ private struct BridgeView: View {
             .listStyle(.inset)
 
             if let error = state.errorMessage {
-                ErrorBanner(message: error) { state.errorMessage = nil }
+                ErrorBanner(message: error) { state.dismissError() }
                     .padding(.horizontal, 24)
             }
         }
@@ -241,6 +241,7 @@ private struct RemindersView: View {
     @Bindable var state: AppState
     @State private var quickTitle = ""
     @State private var quickListID = ""
+    @State private var isAddingReminder = false
     @FocusState private var quickAddFocused: Bool
 
     var body: some View {
@@ -248,7 +249,7 @@ private struct RemindersView: View {
             header
             Divider()
             if let error = state.errorMessage {
-                ErrorBanner(message: error) { state.errorMessage = nil }
+                ErrorBanner(message: error) { state.dismissError() }
                     .padding(.horizontal, 16)
                     .padding(.top, 10)
             }
@@ -257,6 +258,7 @@ private struct RemindersView: View {
                 title: $quickTitle,
                 selectedListID: $quickListID,
                 lists: state.snapshot.lists,
+                isSubmitting: isAddingReminder,
                 focused: $quickAddFocused,
                 submit: addReminder
             )
@@ -346,18 +348,22 @@ private struct RemindersView: View {
 
     private func addReminder() {
         let title = quickTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty, !quickListID.isEmpty else { return }
+        guard !title.isEmpty, !quickListID.isEmpty, !isAddingReminder else { return }
         let calendar = Calendar.autoupdatingCurrent
         let day = state.selectedView == .today
             ? Date()
             : (calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date())
-        quickTitle = ""
+        isAddingReminder = true
         Task {
-            await state.createReminder(
+            let succeeded = await state.createReminder(
                 title: title,
                 listID: quickListID,
                 due: ReminderDue(date: day, includesTime: false)
             )
+            if succeeded {
+                quickTitle = ""
+            }
+            isAddingReminder = false
             quickAddFocused = true
         }
     }
@@ -432,6 +438,7 @@ private struct QuickAddView: View {
     @Binding var title: String
     @Binding var selectedListID: String
     let lists: [ReminderListRecord]
+    let isSubmitting: Bool
     var focused: FocusState<Bool>.Binding
     let submit: () -> Void
 
@@ -453,20 +460,22 @@ private struct QuickAddView: View {
             .menuStyle(.borderlessButton)
             .fixedSize()
             .help("Choose list")
+            .disabled(isSubmitting)
 
             TextField("New reminder", text: $title)
                 .textFieldStyle(.roundedBorder)
                 .focused(focused)
                 .onSubmit(submit)
                 .accessibilityHint("Press Return to add the reminder")
+                .disabled(isSubmitting)
 
             Button(action: submit) {
-                Image(systemName: "arrow.up.circle.fill")
+                Image(systemName: isSubmitting ? "clock" : "arrow.up.circle.fill")
                     .font(.title2)
                     .foregroundStyle(title.trimmingCharacters(in: .whitespaces).isEmpty ? Color.secondary : Color.accentColor)
             }
             .buttonStyle(.plain)
-            .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty || selectedListID.isEmpty)
+            .disabled(isSubmitting || title.trimmingCharacters(in: .whitespaces).isEmpty || selectedListID.isEmpty)
             .accessibilityLabel("Add reminder")
         }
         .padding(12)

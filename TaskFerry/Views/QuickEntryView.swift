@@ -5,6 +5,7 @@ struct QuickEntryView: View {
     @State private var title = ""
     @State private var listID = ""
     @State private var due = QuickDue.today
+    @State private var isSubmitting = false
     @FocusState private var titleFocused: Bool
 
     var body: some View {
@@ -23,12 +24,14 @@ struct QuickEntryView: View {
                     .textFieldStyle(.roundedBorder)
                     .focused($titleFocused)
                     .onSubmit(addReminder)
+                    .disabled(isSubmitting)
 
                 Picker("List", selection: $listID) {
                     ForEach(state.snapshot.lists) { list in
                         Text(list.title).tag(list.id)
                     }
                 }
+                .disabled(isSubmitting)
 
                 Picker("Due", selection: $due) {
                     ForEach(QuickDue.allCases) { option in
@@ -36,12 +39,13 @@ struct QuickEntryView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .disabled(isSubmitting)
 
-                Button("Add Reminder", action: addReminder)
+                Button(isSubmitting ? "Adding…" : "Add Reminder", action: addReminder)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity, alignment: .trailing)
-                    .disabled(title.trimmed.isEmpty || listID.isEmpty)
+                    .disabled(isSubmitting || title.trimmed.isEmpty || listID.isEmpty)
             }
 
             if let error = state.errorMessage {
@@ -64,10 +68,14 @@ struct QuickEntryView: View {
 
     private func addReminder() {
         let reminderTitle = title.trimmed
-        guard !reminderTitle.isEmpty, !listID.isEmpty else { return }
-        title = ""
+        guard !reminderTitle.isEmpty, !listID.isEmpty, !isSubmitting else { return }
+        isSubmitting = true
         Task {
-            await state.createReminder(title: reminderTitle, listID: listID, due: due.value)
+            let succeeded = await state.createReminder(title: reminderTitle, listID: listID, due: due.value)
+            if succeeded {
+                title = ""
+            }
+            isSubmitting = false
             titleFocused = true
         }
     }
