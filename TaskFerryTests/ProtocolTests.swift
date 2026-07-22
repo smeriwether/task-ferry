@@ -14,6 +14,27 @@ final class ProtocolTests: XCTestCase {
         XCTAssertEqual(decoded.due, due)
     }
 
+    func testSnapshotPreservesDefaultList() throws {
+        let snapshot = ReminderSnapshot(
+            lists: [ReminderListRecord(id: "personal", title: "Personal", colorHex: "5E5CE6")],
+            reminders: [],
+            defaultListID: "personal"
+        )
+
+        let data = try JSONEncoder().encode(snapshot)
+        let decoded = try JSONDecoder().decode(ReminderSnapshot.self, from: data)
+
+        XCTAssertEqual(decoded.defaultListID, "personal")
+    }
+
+    func testSnapshotWithoutDefaultListRemainsDecodable() throws {
+        let data = Data(#"{"lists":[],"reminders":[]}"#.utf8)
+
+        let decoded = try JSONDecoder().decode(ReminderSnapshot.self, from: data)
+
+        XCTAssertNil(decoded.defaultListID)
+    }
+
     func testHTTPRequestWaitsForCompleteBody() throws {
         let body = try JSONEncoder().encode(RPCRequest.snapshot)
         let header = "POST /v1/rpc HTTP/1.1\r\nContent-Type: application/json\r\nContent-Length: \(body.count)\r\nAuthorization: Bearer test\r\n\r\n"

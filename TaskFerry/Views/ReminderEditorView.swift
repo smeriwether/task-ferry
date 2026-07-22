@@ -22,56 +22,64 @@ struct ReminderEditorView: View {
     }
 
     var body: some View {
-        Form {
-            Section("Reminder") {
-                TextField("Title", text: $title)
-                Picker("List", selection: $listID) {
-                    ForEach(state.snapshot.lists) { list in
-                        Text(list.title).tag(list.id)
+        VStack(spacing: 0) {
+            SubviewHeader(
+                title: reminder == nil ? "New Reminder" : "Edit Reminder",
+                dismiss: { dismiss() }
+            ) {
+                Button("Save", action: save)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || listID.isEmpty)
+            }
+            Divider()
+
+            Form {
+                Section("Reminder") {
+                    TextField("Title", text: $title)
+                    Picker("List", selection: $listID) {
+                        ForEach(state.snapshot.lists) { list in
+                            Text(list.title).tag(list.id)
+                        }
                     }
                 }
-            }
-            Section("Due") {
-                Toggle("Due date", isOn: $hasDue)
-                if hasDue {
-                    DatePicker("Date", selection: $dueDate, displayedComponents: .date)
-                    Toggle("Time", isOn: $includesTime)
-                    if includesTime {
-                        DatePicker("Time", selection: $dueDate, displayedComponents: .hourAndMinute)
-                    }
-                    LabeledContent("Set") {
-                        ControlGroup {
-                            Button("Today") { dueDate = Date(); hasDue = true }
-                            Button("Tomorrow") {
-                                dueDate = Calendar.autoupdatingCurrent.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-                                hasDue = true
+                Section("Due") {
+                    Toggle("Due date", isOn: $hasDue)
+                    if hasDue {
+                        DatePicker("Date", selection: $dueDate, displayedComponents: .date)
+                        Toggle("Time", isOn: $includesTime)
+                        if includesTime {
+                            DatePicker("Time", selection: $dueDate, displayedComponents: .hourAndMinute)
+                        }
+                        LabeledContent("Set") {
+                            ControlGroup {
+                                Button("Today") { dueDate = Date(); hasDue = true }
+                                Button("Tomorrow") {
+                                    dueDate = Calendar.autoupdatingCurrent.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+                                    hasDue = true
+                                }
                             }
                         }
                     }
                 }
-            }
-            if reminder != nil {
-                Section {
-                    if confirmingDelete {
-                        HStack {
-                            Text("Delete this reminder?")
-                            Spacer()
-                            Button("Cancel") { confirmingDelete = false }
-                            Button("Delete", role: .destructive, action: delete)
+                if reminder != nil {
+                    Section {
+                        if confirmingDelete {
+                            HStack {
+                                Text("Delete this reminder?")
+                                Spacer()
+                                Button("Cancel") { confirmingDelete = false }
+                                Button("Delete", role: .destructive, action: delete)
+                            }
+                        } else {
+                            Button("Delete Reminder", role: .destructive) { confirmingDelete = true }
                         }
-                    } else {
-                        Button("Delete Reminder", role: .destructive) { confirmingDelete = true }
                     }
                 }
             }
+            .formStyle(.grouped)
         }
-        .formStyle(.grouped)
-        .navigationTitle(reminder == nil ? "New Reminder" : "Edit Reminder")
-        .toolbar {
-            Button("Save", action: save)
-                .keyboardShortcut(.defaultAction)
-                .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || listID.isEmpty)
-        }
+        .navigationTitle("")
+        .navigationBarBackButtonHidden(true)
     }
 
     private var due: ReminderDue? {

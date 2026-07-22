@@ -4,6 +4,12 @@ import Observation
 @MainActor
 @Observable
 final class AppState {
+    struct StoredCredentials: Sendable {
+        let accessClientID: String
+        let accessClientSecret: String
+        let bridgeToken: String
+    }
+
     enum ConnectionState: Equatable {
         case idle
         case loading
@@ -81,7 +87,12 @@ final class AppState {
         selectedView == .today ? todayReminders : tomorrowReminders
     }
 
-    var defaultListID: String? { snapshot.lists.first?.id }
+    var defaultListID: String? {
+        if let id = snapshot.defaultListID, snapshot.lists.contains(where: { $0.id == id }) {
+            return id
+        }
+        return snapshot.lists.first?.id
+    }
 
     func reminders(in listID: String) -> [ReminderRecord] {
         snapshot.reminders.filter { $0.listID == listID }.sorted(by: sortReminders)
@@ -165,12 +176,25 @@ final class AppState {
         if mode == .remote { configureService(for: .remote) }
     }
 
-    func regenerateBridgeToken() throws {
-        try KeychainStore.set(KeychainStore.randomToken(), for: SecretKey.bridgeToken)
-        if mode == .bridge { configureService(for: .bridge) }
+    func loadStoredCredentials() async -> StoredCredentials {
+        await Task.detached(priority: .utility) {
+            StoredCredentials(
+                accessClientID: KeychainStore.string(for: SecretKey.accessClientID),
+                accessClientSecret: KeychainStore.string(for: SecretKey.accessClientSecret),
+                bridgeToken: KeychainStore.string(for: SecretKey.bridgeToken)
+            )
+        }.value
     }
 
-    private func configureService(for mode: AppMode) {
+    @discardableResult
+    func regenerateBridgeToken() throws -> String {
+        let token = try KeychainStore.randomToken()
+        try KeychainStore.set(token, for: SecretKey.bridgeToken)
+        if mode == .bridge { configureService(for: .bridge, bridgeTokenOverride: token) }
+        return token
+    }
+
+    private func configureService(for mode: AppMode, bridgeTokenOverride: String? = nil) {
         bridge?.stop()
         bridge = nil
         switch mode {
@@ -178,7 +202,7 @@ final class AppState {
             let localService = EventKitReminderService()
             service = localService
             do {
-                var token = bridgeToken
+                var token = bridgeTokenOverride ?? bridgeToken
                 if token.isEmpty {
                     token = try KeychainStore.randomToken()
                     try KeychainStore.set(token, for: SecretKey.bridgeToken)

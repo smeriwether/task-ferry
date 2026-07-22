@@ -1,11 +1,15 @@
 import SwiftUI
 
 struct ListsView: View {
+    @Environment(\.dismiss) private var dismiss
     @Bindable var state: AppState
     @State private var newListTitle = ""
 
     var body: some View {
         VStack(spacing: 0) {
+            SubviewHeader(title: "Lists", dismiss: { dismiss() })
+            Divider()
+
             List {
                 ForEach(state.snapshot.lists) { list in
                     NavigationLink {
@@ -37,7 +41,8 @@ struct ListsView: View {
             .background(.bar)
             .overlay(alignment: .top) { Divider() }
         }
-        .navigationTitle("Lists")
+        .navigationTitle("")
+        .navigationBarBackButtonHidden(true)
     }
 
     private func addList() {
@@ -49,12 +54,26 @@ struct ListsView: View {
 }
 
 private struct ListDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     @Bindable var state: AppState
     let list: ReminderListRecord
     @State private var newTitle = ""
 
     var body: some View {
         VStack(spacing: 0) {
+            SubviewHeader(title: list.title, dismiss: { dismiss() }) {
+                NavigationLink {
+                    ListSettingsView(state: state, list: list)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("List settings")
+            }
+            Divider()
+
             if reminders.isEmpty {
                 Spacer()
                 ContentUnavailableView(
@@ -90,15 +109,8 @@ private struct ListDetailView: View {
             .background(.bar)
             .overlay(alignment: .top) { Divider() }
         }
-        .navigationTitle(list.title)
-        .toolbar {
-            NavigationLink {
-                ListSettingsView(state: state, list: list)
-            } label: {
-                Image(systemName: "ellipsis.circle")
-            }
-            .help("List settings")
-        }
+        .navigationTitle("")
+        .navigationBarBackButtonHidden(true)
     }
 
     private var reminders: [ReminderRecord] { state.reminders(in: list.id) }
@@ -161,41 +173,89 @@ private struct ListSettingsView: View {
     }
 
     var body: some View {
-        Form {
-            Section("List") {
-                TextField("Name", text: $title)
+        VStack(spacing: 0) {
+            SubviewHeader(title: "List Settings", dismiss: { dismiss() }) {
+                Button("Save", action: save)
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            Section {
-                if confirmingDelete {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Delete “\(list.title)” and its \(state.reminders(in: list.id).count) reminders?")
+            Divider()
+
+            Form {
+                Section("List") {
+                    TextField("Name", text: $title)
+                }
+                Section {
+                    if confirmingDelete {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Delete “\(list.title)” and its \(state.reminders(in: list.id).count) reminders?")
                             .font(.callout)
-                        HStack {
-                            Button("Cancel") { confirmingDelete = false }
-                            Button("Delete", role: .destructive) {
-                                Task {
-                                    await state.deleteList(list)
-                                    dismiss()
+                            HStack {
+                                Button("Cancel") { confirmingDelete = false }
+                                Button("Delete", role: .destructive) {
+                                    Task {
+                                        await state.deleteList(list)
+                                        dismiss()
+                                    }
                                 }
                             }
                         }
+                    } else {
+                        Button("Delete List", role: .destructive) { confirmingDelete = true }
                     }
-                } else {
-                    Button("Delete List", role: .destructive) { confirmingDelete = true }
                 }
             }
+            .formStyle(.grouped)
         }
-        .formStyle(.grouped)
-        .navigationTitle("List Settings")
-        .toolbar {
-            Button("Save") {
-                Task {
-                    await state.renameList(list, title: title)
-                    dismiss()
-                }
+        .navigationTitle("")
+        .navigationBarBackButtonHidden(true)
+    }
+
+    private func save() {
+        Task {
+            await state.renameList(list, title: title)
+            dismiss()
+        }
+    }
+}
+
+struct SubviewHeader<Trailing: View>: View {
+    let title: String
+    let dismiss: () -> Void
+    let trailing: Trailing
+
+    init(title: String, dismiss: @escaping () -> Void, @ViewBuilder trailing: () -> Trailing) {
+        self.title = title
+        self.dismiss = dismiss
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button(action: dismiss) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
             }
-            .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .buttonStyle(.plain)
+            .help("Back")
+            .accessibilityLabel("Back")
+
+            Text(title)
+                .font(.headline)
+                .lineLimit(1)
+            Spacer()
+            trailing
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.bar)
+    }
+}
+
+extension SubviewHeader where Trailing == EmptyView {
+    init(title: String, dismiss: @escaping () -> Void) {
+        self.init(title: title, dismiss: dismiss) { EmptyView() }
     }
 }
 

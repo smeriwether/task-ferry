@@ -59,7 +59,8 @@ final class EventKitReminderService: ReminderService {
                     colorHex: Self.colorHex(calendar.cgColor)
                 )
             }.sorted(by: Self.sortLists),
-            reminders: reminders.compactMap(Self.record)
+            reminders: reminders.compactMap(Self.record),
+            defaultListID: store.defaultCalendarForNewReminders()?.calendarIdentifier
         )
     }
 

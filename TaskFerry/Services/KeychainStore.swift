@@ -3,6 +3,7 @@ import Security
 
 enum KeychainStore {
     private static let service = "com.merimerimeri.TaskFerry"
+    private static let tokenAlphabet = Array("23456789ABCDEFGHJKMNPQRSTVWXYZ")
 
     static func string(for account: String) -> String {
         let query: [String: Any] = [
@@ -38,10 +39,19 @@ enum KeychainStore {
     }
 
     static func randomToken() throws -> String {
-        var bytes = [UInt8](repeating: 0, count: 32)
-        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
-            throw ReminderServiceError.message("Could not create a secure bridge token.")
+        var characters: [Character] = []
+        while characters.count < 24 {
+            var bytes = [UInt8](repeating: 0, count: 32)
+            guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
+                throw ReminderServiceError.message("Could not create a secure bridge token.")
+            }
+            for byte in bytes where byte < 240 {
+                characters.append(tokenAlphabet[Int(byte) % tokenAlphabet.count])
+                if characters.count == 24 { break }
+            }
         }
-        return Data(bytes).base64EncodedString()
+        return stride(from: 0, to: characters.count, by: 4)
+            .map { String(characters[$0..<min($0 + 4, characters.count)]) }
+            .joined(separator: "-")
     }
 }

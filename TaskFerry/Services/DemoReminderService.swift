@@ -20,7 +20,8 @@ final class DemoReminderService: ReminderService {
                 ReminderRecord(id: "2", listID: "personal", title: "Renew prescription", due: today),
                 ReminderRecord(id: "3", listID: "personal", title: "Call the dentist", due: overdue),
                 ReminderRecord(id: "4", listID: "work", title: "Prepare tomorrow’s notes", due: tomorrow)
-            ]
+            ],
+            defaultListID: "personal"
         )
     }
 

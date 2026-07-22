@@ -90,6 +90,7 @@ struct ReminderRecord: Codable, Hashable, Identifiable, Sendable {
 struct ReminderSnapshot: Codable, Equatable, Sendable {
     var lists: [ReminderListRecord]
     var reminders: [ReminderRecord]
+    var defaultListID: String? = nil
 
     static let empty = ReminderSnapshot(lists: [], reminders: [])
 }

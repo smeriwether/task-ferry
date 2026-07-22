@@ -8,7 +8,10 @@ struct SettingsView: View {
     @State private var clientID = ""
     @State private var clientSecret = ""
     @State private var bridgeToken = ""
+    @State private var bridgeTokenRevealed = false
     @State private var launchAtLogin = false
+    @State private var launchAtLoginLoaded = false
+    @State private var launchAtLoginUpdating = false
     @State private var message: String?
 
     var body: some View {
@@ -28,7 +31,20 @@ struct SettingsView: View {
                     TextField("Server URL", text: $endpoint)
                     TextField("Cloudflare client ID", text: $clientID)
                     SecureField("Cloudflare client secret", text: $clientSecret)
-                    SecureField("Bridge token", text: $bridgeToken)
+                    HStack {
+                        if bridgeTokenRevealed {
+                            TextField("Bridge token", text: $bridgeToken)
+                        } else {
+                            SecureField("Bridge token", text: $bridgeToken)
+                        }
+                        Button {
+                            bridgeTokenRevealed.toggle()
+                        } label: {
+                            Image(systemName: bridgeTokenRevealed ? "eye.slash" : "eye")
+                        }
+                        .buttonStyle(.borderless)
+                        .help(bridgeTokenRevealed ? "Hide bridge token" : "Show bridge token")
+                    }
                     HStack {
                         Button("Save") { saveRemote() }
                         Button("Save & Test") {
@@ -41,18 +57,29 @@ struct SettingsView: View {
                 Section("Bridge") {
                     LabeledContent("Local address", value: "127.0.0.1:\(state.port)")
                     HStack {
-                        LabeledContent("Bridge token", value: "••••••••••••")
+                        Text("Bridge token")
+                        Spacer()
+                        Button(bridgeTokenRevealed ? "Hide" : "Show") {
+                            bridgeTokenRevealed.toggle()
+                        }
                         Button("Copy") {
                             NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(state.bridgeToken, forType: .string)
+                            NSPasteboard.general.setString(bridgeToken, forType: .string)
                             message = "Bridge token copied."
                         }
                     }
+                    if bridgeTokenRevealed {
+                        Text(bridgeToken)
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                    }
+                    Text("New tokens use six short, unambiguous groups for easier typing.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Button("Generate New Token") {
                         do {
-                            try state.regenerateBridgeToken()
-                            bridgeToken = state.bridgeToken
-                            message = "A new bridge token is ready."
+                            bridgeToken = try state.regenerateBridgeToken()
+                            message = "A new easy-to-type bridge token is ready."
                         } catch {
                             message = error.localizedDescription
                         }
@@ -61,10 +88,8 @@ struct SettingsView: View {
             }
 
             Section("General") {
-                Toggle("Launch at Login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, enabled in
-                        updateLaunchAtLogin(enabled)
-                    }
+                Toggle("Launch at Login", isOn: launchAtLoginBinding)
+                    .disabled(!launchAtLoginLoaded || launchAtLoginUpdating)
                 if UpdateManager.isSupported {
                     Button("Check for Updates…") {
                         UpdateManager.checkForUpdates()
@@ -79,19 +104,22 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 480, height: 420)
         .navigationTitle("Task Ferry")
-        .onAppear(perform: load)
         .task {
-            launchAtLogin = await Task.detached(priority: .utility) {
+            endpoint = state.endpoint
+            async let storedCredentials = state.loadStoredCredentials()
+            async let launchAtLoginStatus = Task.detached(priority: .utility) {
                 SMAppService.mainApp.status == .enabled
             }.value
+            launchAtLoginLoaded = true
+            let currentLaunchAtLogin = await launchAtLoginStatus
+            if !launchAtLoginUpdating {
+                launchAtLogin = currentLaunchAtLogin
+            }
+            let credentials = await storedCredentials
+            clientID = credentials.accessClientID
+            clientSecret = credentials.accessClientSecret
+            bridgeToken = credentials.bridgeToken
         }
-    }
-
-    private func load() {
-        endpoint = state.endpoint
-        clientID = state.accessClientID
-        clientSecret = state.accessClientSecret
-        bridgeToken = state.bridgeToken
     }
 
     private func saveRemote() {
@@ -108,16 +136,36 @@ struct SettingsView: View {
         }
     }
 
-    private func updateLaunchAtLogin(_ enabled: Bool) {
-        do {
-            if enabled {
-                try SMAppService.mainApp.register()
-            } else {
-                try SMAppService.mainApp.unregister()
+    private var launchAtLoginBinding: Binding<Bool> {
+        Binding(
+            get: { launchAtLogin },
+            set: { enabled in
+                launchAtLogin = enabled
+                launchAtLoginUpdating = true
+                Task { await updateLaunchAtLogin(enabled) }
             }
-        } catch {
-            launchAtLogin = SMAppService.mainApp.status == .enabled
-            message = error.localizedDescription
+        )
+    }
+
+    private func updateLaunchAtLogin(_ enabled: Bool) async {
+        let result = await Task.detached(priority: .userInitiated) {
+            var errorMessage: String?
+            do {
+                if enabled {
+                    try SMAppService.mainApp.register()
+                } else {
+                    try SMAppService.mainApp.unregister()
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            return (SMAppService.mainApp.status == .enabled, errorMessage)
+        }.value
+
+        launchAtLogin = result.0
+        launchAtLoginUpdating = false
+        if let errorMessage = result.1 {
+            message = errorMessage
         }
     }
 }

@@ -16,10 +16,52 @@ struct MenuRootView: View {
                     RemindersView(state: state)
                 }
             }
-            .frame(width: 400, height: 540)
+            .frame(minWidth: 400, minHeight: 540)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .background(WindowMinimumSize(width: 400, height: 540))
         .task { state.start() }
+    }
+}
+
+private struct WindowMinimumSize: NSViewRepresentable {
+    let width: CGFloat
+    let height: CGFloat
+
+    func makeNSView(context: Context) -> MinimumSizeHostingView {
+        MinimumSizeHostingView(contentSize: NSSize(width: width, height: height))
+    }
+
+    func updateNSView(_ view: MinimumSizeHostingView, context: Context) {
+        view.contentSize = NSSize(width: width, height: height)
+        view.applyMinimumSize()
+    }
+}
+
+private final class MinimumSizeHostingView: NSView {
+    var contentSize: NSSize
+
+    init(contentSize: NSSize) {
+        self.contentSize = contentSize
+        super.init(frame: .zero)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        applyMinimumSize()
+    }
+
+    func applyMinimumSize() {
+        guard let window else { return }
+        window.contentMinSize = contentSize
+        let frameSize = window.frameRect(forContentRect: NSRect(origin: .zero, size: contentSize))
+            .size
+        window.minSize = frameSize
     }
 }
 
@@ -221,13 +263,14 @@ private struct RemindersView: View {
         }
         .task {
             await state.refresh()
-            if quickListID.isEmpty { quickListID = state.defaultListID ?? "" }
+            selectDefaultListIfNeeded()
         }
+        .onChange(of: state.snapshot.lists) { _, _ in selectDefaultListIfNeeded() }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
+            HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(state.selectedView.title)
                         .font(.system(size: 27, weight: .semibold))
@@ -236,26 +279,28 @@ private struct RemindersView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(verbatim: "\(state.visibleReminders.count)")
-                    .font(.title2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("\(state.visibleReminders.count) reminders")
-                NavigationLink {
-                    ListsView(state: state)
-                } label: {
-                    Image(systemName: "sidebar.left")
+                HStack(spacing: 4) {
+                    NavigationLink {
+                        ListsView(state: state)
+                    } label: {
+                        Image(systemName: "sidebar.left")
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Show Lists")
+                    .accessibilityLabel("Lists")
+                    Button {
+                        Task { await state.refresh() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Refresh Reminders (Command-R)")
+                    .keyboardShortcut("r", modifiers: .command)
                 }
-                .buttonStyle(.borderless)
-                .help("Show Lists")
-                .accessibilityLabel("Lists")
-                Button {
-                    Task { await state.refresh() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.borderless)
-                .help("Refresh Reminders (Command-R)")
-                .keyboardShortcut("r", modifiers: .command)
             }
             Picker("Day", selection: $state.selectedView) {
                 ForEach(SmartView.allCases) { view in
@@ -318,6 +363,11 @@ private struct RemindersView: View {
             )
             quickAddFocused = true
         }
+    }
+
+    private func selectDefaultListIfNeeded() {
+        guard !state.snapshot.lists.contains(where: { $0.id == quickListID }) else { return }
+        quickListID = state.defaultListID ?? ""
     }
 }
 

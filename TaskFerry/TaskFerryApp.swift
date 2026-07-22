@@ -13,7 +13,8 @@ struct TaskFerryApp: App {
         WindowGroup("Task Ferry") {
             MenuRootView(state: state)
         }
-        .windowResizability(.contentSize)
+        .defaultSize(width: 400, height: 540)
+        .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Task Ferry") {

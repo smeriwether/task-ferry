@@ -56,9 +56,10 @@ struct QuickEntryView: View {
         .task {
             due = .today
             await state.refresh()
-            if listID.isEmpty { listID = state.defaultListID ?? "" }
+            selectDefaultListIfNeeded()
             titleFocused = true
         }
+        .onChange(of: state.snapshot.lists) { _, _ in selectDefaultListIfNeeded() }
     }
 
     private func addReminder() {
@@ -69,6 +70,11 @@ struct QuickEntryView: View {
             await state.createReminder(title: reminderTitle, listID: listID, due: due.value)
             titleFocused = true
         }
+    }
+
+    private func selectDefaultListIfNeeded() {
+        guard !state.snapshot.lists.contains(where: { $0.id == listID }) else { return }
+        listID = state.defaultListID ?? ""
     }
 }
 
