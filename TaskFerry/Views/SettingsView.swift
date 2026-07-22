@@ -85,6 +85,25 @@ struct SettingsView: View {
                         }
                     }
                 }
+
+                Section("Background") {
+                    Toggle("Run in Background", isOn: runsInBackgroundBinding)
+                    Text("Hides the Dock icon while the bridge keeps running. Open Task Ferry again from Applications whenever you need its window.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section("Sync") {
+                Button("Refresh Reminders") {
+                    Task { await state.refresh() }
+                }
+                .keyboardShortcut("r", modifiers: .command)
+                Text(state.mode == .remote
+                    ? "Task Ferry also checks automatically every 15 seconds and whenever the app becomes active."
+                    : "Reminders access and data are checked automatically when the bridge starts.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("General") {
@@ -144,6 +163,13 @@ struct SettingsView: View {
                 launchAtLoginUpdating = true
                 Task { await updateLaunchAtLogin(enabled) }
             }
+        )
+    }
+
+    private var runsInBackgroundBinding: Binding<Bool> {
+        Binding(
+            get: { state.runsInBackground },
+            set: { state.setRunsInBackground($0) }
         )
     }
 

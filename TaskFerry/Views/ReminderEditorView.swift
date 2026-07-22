@@ -50,33 +50,16 @@ struct ReminderEditorView: View {
                         if includesTime {
                             DatePicker("Time", selection: $dueDate, displayedComponents: .hourAndMinute)
                         }
-                        LabeledContent("Set") {
-                            ControlGroup {
-                                Button("Today") { dueDate = Date(); hasDue = true }
-                                Button("Tomorrow") {
-                                    dueDate = Calendar.autoupdatingCurrent.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-                                    hasDue = true
-                                }
-                            }
-                        }
-                    }
-                }
-                if reminder != nil {
-                    Section {
-                        if confirmingDelete {
-                            HStack {
-                                Text("Delete this reminder?")
-                                Spacer()
-                                Button("Cancel") { confirmingDelete = false }
-                                Button("Delete", role: .destructive, action: delete)
-                            }
-                        } else {
-                            Button("Delete Reminder", role: .destructive) { confirmingDelete = true }
-                        }
                     }
                 }
             }
             .formStyle(.grouped)
+
+            if reminder != nil {
+                deleteControls
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+            }
         }
         .navigationTitle("")
         .navigationBarBackButtonHidden(true)
@@ -84,6 +67,26 @@ struct ReminderEditorView: View {
 
     private var due: ReminderDue? {
         hasDue ? ReminderDue(date: dueDate, includesTime: includesTime) : nil
+    }
+
+    @ViewBuilder
+    private var deleteControls: some View {
+        if confirmingDelete {
+            HStack {
+                Text("Delete this reminder?")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Cancel") { confirmingDelete = false }
+                Button("Delete", role: .destructive, action: delete)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+            }
+        } else {
+            Button("Delete Reminder", role: .destructive) { confirmingDelete = true }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private func save() {

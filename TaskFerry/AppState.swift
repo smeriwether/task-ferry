@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 
@@ -21,6 +22,7 @@ final class AppState {
         static let mode = "mode"
         static let endpoint = "endpoint"
         static let port = "port"
+        static let runsInBackground = "runs-in-background"
     }
 
     private enum SecretKey {
@@ -35,10 +37,12 @@ final class AppState {
     var connectionState = ConnectionState.idle
     var bridgeState = BridgeServer.State.stopped
     var errorMessage: String?
+    var runsInBackground: Bool
 
     @ObservationIgnored private var service: (any ReminderService)?
     @ObservationIgnored private var bridge: BridgeServer?
     @ObservationIgnored private var isStarted = false
+    @ObservationIgnored private var isRefreshing = false
     @ObservationIgnored private let isDemo: Bool
 
     var endpoint: String {
@@ -54,17 +58,21 @@ final class AppState {
         set { UserDefaults.standard.set(Int(newValue), forKey: DefaultsKey.port) }
     }
 
-    var accessClientID: String { KeychainStore.string(for: SecretKey.accessClientID) }
-    var accessClientSecret: String { KeychainStore.string(for: SecretKey.accessClientSecret) }
-    var bridgeToken: String { KeychainStore.string(for: SecretKey.bridgeToken) }
+    var accessClientID: String { isDemo ? "" : KeychainStore.string(for: SecretKey.accessClientID) }
+    var accessClientSecret: String { isDemo ? "" : KeychainStore.string(for: SecretKey.accessClientSecret) }
+    var bridgeToken: String { isDemo ? "DEMO-DEMO-DEMO-DEMO-DEMO-DEMO" : KeychainStore.string(for: SecretKey.bridgeToken) }
 
     init() {
         isDemo = ProcessInfo.processInfo.environment["TASK_FERRY_DEMO"] == "1"
+        runsInBackground = isDemo ? false : UserDefaults.standard.bool(forKey: DefaultsKey.runsInBackground)
         if isDemo {
-            mode = .remote
+            mode = ProcessInfo.processInfo.environment["TASK_FERRY_DEMO_ROLE"] == "bridge" ? .bridge : .remote
             service = DemoReminderService()
             isStarted = true
             connectionState = .connected
+            if mode == .bridge {
+                bridgeState = .running(8788)
+            }
         } else if let value = UserDefaults.standard.string(forKey: DefaultsKey.mode),
                   let savedMode = AppMode(rawValue: value) {
             mode = savedMode
@@ -107,6 +115,7 @@ final class AppState {
         UserDefaults.standard.set(mode.rawValue, forKey: DefaultsKey.mode)
         isStarted = true
         configureService(for: mode)
+        applyActivationPolicy()
     }
 
     func start() {
@@ -125,15 +134,22 @@ final class AppState {
         snapshot = .empty
         connectionState = .idle
         UserDefaults.standard.removeObject(forKey: DefaultsKey.mode)
+        applyActivationPolicy()
     }
 
-    func refresh() async {
+    func refresh(showLoadingIndicator: Bool = true) async {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
         start()
         guard let service else { return }
-        connectionState = .loading
+        if showLoadingIndicator || snapshot == .empty {
+            connectionState = .loading
+        }
         do {
             snapshot = try await service.execute(.snapshot)
             connectionState = .connected
+            errorMessage = nil
         } catch {
             connectionState = .failed(error.localizedDescription)
             errorMessage = error.localizedDescription
@@ -177,7 +193,10 @@ final class AppState {
     }
 
     func loadStoredCredentials() async -> StoredCredentials {
-        await Task.detached(priority: .utility) {
+        if isDemo {
+            return StoredCredentials(accessClientID: "", accessClientSecret: "", bridgeToken: bridgeToken)
+        }
+        return await Task.detached(priority: .utility) {
             StoredCredentials(
                 accessClientID: KeychainStore.string(for: SecretKey.accessClientID),
                 accessClientSecret: KeychainStore.string(for: SecretKey.accessClientSecret),
@@ -188,10 +207,25 @@ final class AppState {
 
     @discardableResult
     func regenerateBridgeToken() throws -> String {
+        if isDemo { return bridgeToken }
         let token = try KeychainStore.randomToken()
         try KeychainStore.set(token, for: SecretKey.bridgeToken)
         if mode == .bridge { configureService(for: .bridge, bridgeTokenOverride: token) }
         return token
+    }
+
+    func setRunsInBackground(_ enabled: Bool) {
+        runsInBackground = enabled
+        if !isDemo {
+            UserDefaults.standard.set(enabled, forKey: DefaultsKey.runsInBackground)
+        }
+        applyActivationPolicy()
+    }
+
+    func applyActivationPolicy() {
+        guard !isDemo else { return }
+        let policy: NSApplication.ActivationPolicy = mode == .bridge && runsInBackground ? .accessory : .regular
+        NSApplication.shared.setActivationPolicy(policy)
     }
 
     private func configureService(for mode: AppMode, bridgeTokenOverride: String? = nil) {
@@ -240,6 +274,7 @@ final class AppState {
         do {
             snapshot = try await service.execute(request)
             connectionState = .connected
+            errorMessage = nil
         } catch {
             connectionState = .failed(error.localizedDescription)
             errorMessage = error.localizedDescription

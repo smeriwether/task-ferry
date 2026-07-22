@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 struct MenuRootView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @Bindable var state: AppState
 
     var body: some View {
@@ -20,7 +21,14 @@ struct MenuRootView: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .background(WindowMinimumSize(width: 400, height: 540))
-        .task { state.start() }
+        .task {
+            state.start()
+            state.applyActivationPolicy()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, state.mode != nil else { return }
+            Task { await state.refresh(showLoadingIndicator: false) }
+        }
     }
 }
 
@@ -174,16 +182,8 @@ private struct BridgeView: View {
                 ErrorBanner(message: error) { state.errorMessage = nil }
                     .padding(.horizontal, 24)
             }
-
-            Button(state.connectionState == .connected ? "Refresh Reminders" : "Allow Reminders Access") {
-                Task { await state.refresh() }
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .keyboardShortcut("r", modifiers: .command)
-            .padding(.vertical, 16)
-
         }
+        .task { await state.refresh() }
     }
 
     private var isRunning: Bool {
@@ -264,6 +264,15 @@ private struct RemindersView: View {
         .task {
             await state.refresh()
             selectDefaultListIfNeeded()
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .seconds(15))
+                } catch {
+                    return
+                }
+                await state.refresh(showLoadingIndicator: false)
+                selectDefaultListIfNeeded()
+            }
         }
         .onChange(of: state.snapshot.lists) { _, _ in selectDefaultListIfNeeded() }
     }
@@ -279,28 +288,16 @@ private struct RemindersView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                HStack(spacing: 4) {
-                    NavigationLink {
-                        ListsView(state: state)
-                    } label: {
-                        Image(systemName: "sidebar.left")
-                            .frame(width: 28, height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help("Show Lists")
-                    .accessibilityLabel("Lists")
-                    Button {
-                        Task { await state.refresh() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .frame(width: 28, height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help("Refresh Reminders (Command-R)")
-                    .keyboardShortcut("r", modifiers: .command)
+                NavigationLink {
+                    ListsView(state: state)
+                } label: {
+                    Image(systemName: "sidebar.left")
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .help("Show Lists")
+                .accessibilityLabel("Lists")
             }
             Picker("Day", selection: $state.selectedView) {
                 ForEach(SmartView.allCases) { view in
