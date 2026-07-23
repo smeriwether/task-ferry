@@ -2,7 +2,7 @@ import XCTest
 
 final class BridgeTokenTests: XCTestCase {
     func testRandomTokenUsesEasyToTranscribeGroups() throws {
-        let token = try KeychainStore.randomToken()
+        let token = try KeychainStore().randomToken()
         let groups = token.split(separator: "-")
         let allowed = CharacterSet(charactersIn: "23456789ABCDEFGHJKMNPQRSTVWXYZ")
 

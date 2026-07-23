@@ -14,7 +14,7 @@ final class AppStateTests: XCTestCase {
         let factory = ReminderServiceFactory(
             makeBridgeService: { service },
             makeRemoteService: { _ in service },
-            makeBridgeServer: { BridgeServer(service: $0, token: $1) }
+            makeBridgeServer: { BridgeServer(operations: $0, token: $1) }
         )
         let state = AppState(
             isDemo: false,
@@ -44,7 +44,7 @@ final class AppStateTests: XCTestCase {
         let factory = ReminderServiceFactory(
             makeBridgeService: { service },
             makeRemoteService: { _ in service },
-            makeBridgeServer: { BridgeServer(service: $0, token: $1) }
+            makeBridgeServer: { BridgeServer(operations: $0, token: $1) }
         )
         let state = AppState(
             isDemo: false,

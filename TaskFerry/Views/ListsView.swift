@@ -43,7 +43,7 @@ struct ListsView: View {
                     .disabled(isAddingList)
                 Button(isAddingList ? "Adding…" : "Add", action: addList)
                     .buttonStyle(.borderless)
-                    .disabled(isAddingList || newListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(isAddingList || newListTitle.trimmed.isEmpty)
             }
             .padding(12)
             .background(.bar)
@@ -54,7 +54,7 @@ struct ListsView: View {
     }
 
     private func addList() {
-        let title = newListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = newListTitle.trimmed
         guard !title.isEmpty, !isAddingList else { return }
         isAddingList = true
         Task {
@@ -105,12 +105,7 @@ private struct ListDetailView: View {
             } else {
                 List {
                     ForEach(reminders) { reminder in
-                        ReminderRowForList(state: state, reminder: reminder)
-                            .contextMenu {
-                                Button("Mark as Complete", systemImage: "checkmark") {
-                                    Task { await state.complete(reminder) }
-                                }
-                            }
+                        ReminderRow(state: state, reminder: reminder, context: .list)
                     }
                 }
                 .listStyle(.inset)
@@ -124,7 +119,7 @@ private struct ListDetailView: View {
                     .disabled(isAddingReminder)
                 Button(isAddingReminder ? "Adding…" : "Add", action: addReminder)
                     .buttonStyle(.borderless)
-                    .disabled(isAddingReminder || newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(isAddingReminder || newTitle.trimmed.isEmpty)
             }
             .padding(12)
             .background(.bar)
@@ -137,7 +132,7 @@ private struct ListDetailView: View {
     private var reminders: [ReminderRecord] { state.reminders(in: list.id) }
 
     private func addReminder() {
-        let title = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = newTitle.trimmed
         guard !title.isEmpty, !isAddingReminder else { return }
         isAddingReminder = true
         Task {
@@ -146,42 +141,6 @@ private struct ListDetailView: View {
             }
             isAddingReminder = false
         }
-    }
-}
-
-private struct ReminderRowForList: View {
-    @Bindable var state: AppState
-    let reminder: ReminderRecord
-
-    var body: some View {
-        HStack(spacing: 11) {
-            Button {
-                Task { await state.complete(reminder) }
-            } label: {
-                Image(systemName: "circle")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(.indigo)
-                    .frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Complete \(reminder.title)")
-
-            NavigationLink {
-                ReminderEditorView(state: state, reminder: reminder, defaultListID: reminder.listID)
-            } label: {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(reminder.title).foregroundStyle(.primary).lineLimit(2)
-                    if let due = reminder.due {
-                        Text(due.summary)
-                            .font(.caption)
-                            .foregroundStyle(due.isBeforeDay(Date()) ? .red : .secondary)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.vertical, 6)
     }
 }
 
@@ -204,7 +163,7 @@ private struct ListSettingsView: View {
         VStack(spacing: 0) {
             SubviewHeader(title: "List Settings", dismiss: { dismiss() }) {
                 Button(isSaving ? "Saving…" : "Save", action: save)
-                    .disabled(isSaving || isDeleting || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(isSaving || isDeleting || title.trimmed.isEmpty)
             }
             Divider()
 
@@ -254,7 +213,7 @@ private struct ListSettingsView: View {
 
     private func save() {
         guard !isSaving, !isDeleting else { return }
-        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTitle = title.trimmed
         isSaving = true
         Task {
             if await state.renameList(list, title: cleanTitle) {
@@ -304,14 +263,5 @@ struct SubviewHeader<Trailing: View>: View {
 extension SubviewHeader where Trailing == EmptyView {
     init(title: String, dismiss: @escaping () -> Void) {
         self.init(title: title, dismiss: dismiss) { EmptyView() }
-    }
-}
-
-extension ReminderDue {
-    var summary: String {
-        guard let date = date() else { return "Due date unavailable" }
-        return hasTime
-            ? date.formatted(date: .abbreviated, time: .shortened)
-            : date.formatted(date: .abbreviated, time: .omitted)
     }
 }

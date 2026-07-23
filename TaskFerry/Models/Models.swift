@@ -129,3 +129,7 @@ enum ReminderServiceError: LocalizedError {
         }
     }
 }
+
+extension String {
+    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
+}

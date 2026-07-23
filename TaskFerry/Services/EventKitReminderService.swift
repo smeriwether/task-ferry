@@ -184,7 +184,3 @@ private extension ReminderDue {
         return components
     }
 }
-
-private extension String {
-    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
-}

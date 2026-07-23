@@ -9,11 +9,11 @@ protocol ReminderService: AnyObject {
 struct ReminderServiceFactory {
     var makeBridgeService: () -> any ReminderService
     var makeRemoteService: (RemoteConfiguration) -> any ReminderService
-    var makeBridgeServer: (any ReminderService, String) -> BridgeServer
+    var makeBridgeServer: (ReminderOperationCoordinator, String) -> BridgeServer
 
     static let live = ReminderServiceFactory(
         makeBridgeService: { EventKitReminderService() },
         makeRemoteService: { RemoteReminderService(configuration: $0) },
-        makeBridgeServer: { BridgeServer(service: $0, token: $1) }
+        makeBridgeServer: { BridgeServer(operations: $0, token: $1) }
     )
 }

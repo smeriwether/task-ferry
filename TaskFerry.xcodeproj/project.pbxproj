@@ -10,6 +10,7 @@
 		019DA8B69F9303A895B4E5A5 /* BridgeServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FD37A1518CA6BC6C91462F0 /* BridgeServer.swift */; };
 		03D85DB50A0167E0E0361009 /* TaskFerryApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6CB77C66C0D9D02A5CE4FBD /* TaskFerryApp.swift */; };
 		0AE39A8C6052D8549BC5D91A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B0CAE150460FCEF57F1476C /* Assets.xcassets */; };
+		0F3873FBDA10DEB308BFD987 /* ReminderRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BC6BE55566C76FCF4FC4E8C /* ReminderRow.swift */; };
 		1038DA6E95E524F84B539FB9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 089F88EF1D818C5FAA3BCBED /* Models.swift */; };
 		1141076F69A6BE9F85CA4B04 /* ReminderEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3992FA5AD11BDDB7451510F /* ReminderEditorView.swift */; };
 		125DA0BE7D79D586EF8F4AD8 /* EventKitReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E81B612719438FCA73F950 /* EventKitReminderService.swift */; };
@@ -29,6 +30,7 @@
 		5A9EC5E9DA55369530B6B4C3 /* ListsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B23E85BC6AE98E43816C69 /* ListsView.swift */; };
 		60139F50181F73F7F9C34D5B /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A48421F551E6D43793CFE8E /* UpdateManager.swift */; };
 		611CA3FB9E6CA3C3D09A43E2 /* ReminderOperationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6988989C67F49EDDEF55A2 /* ReminderOperationCoordinator.swift */; };
+		635F25F0AA2AD2FB3D605B65 /* ReminderPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD8477AD2D1D161E619CACA2 /* ReminderPresentation.swift */; };
 		751AEF40ABC428A4188B7108 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 9BDB648E3C2CA1E7A4CC907B /* Sparkle */; };
 		759C0A0C64285C39BA1C8E61 /* ProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A142AD5432BD3D7F07A8768 /* ProtocolTests.swift */; };
 		76C95316DC0973F18C5790E0 /* RemoteReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A35921E8BB4328C52C89308 /* RemoteReminderService.swift */; };
@@ -67,6 +69,7 @@
 		7A35921E8BB4328C52C89308 /* RemoteReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteReminderService.swift; sourceTree = "<group>"; };
 		7C7F811C8F527C18E0C0ACFF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8B65434108D6E8108BD12A74 /* QuickEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickEntryView.swift; sourceTree = "<group>"; };
+		9BC6BE55566C76FCF4FC4E8C /* ReminderRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderRow.swift; sourceTree = "<group>"; };
 		9F6988989C67F49EDDEF55A2 /* ReminderOperationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderOperationCoordinator.swift; sourceTree = "<group>"; };
 		A61CE4D480A804C09D970DAB /* Info-Direct.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Info-Direct.plist"; sourceTree = "<group>"; };
 		AC41129763EBE01D6A625BBD /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
@@ -75,6 +78,7 @@
 		BCD6BCBB679D119D6A82AFD5 /* CredentialStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialStoreTests.swift; sourceTree = "<group>"; };
 		C6CB77C66C0D9D02A5CE4FBD /* TaskFerryApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFerryApp.swift; sourceTree = "<group>"; };
 		C890C6B4795075390038A326 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CD8477AD2D1D161E619CACA2 /* ReminderPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderPresentation.swift; sourceTree = "<group>"; };
 		CE2DD54FA0E8DB25016F0009 /* DemoReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoReminderService.swift; sourceTree = "<group>"; };
 		D0E81B612719438FCA73F950 /* EventKitReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitReminderService.swift; sourceTree = "<group>"; };
 		D4B236A4AD5F5AFF69F2FA19 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
@@ -147,6 +151,8 @@
 				5BF6290C6B74AEC75C990D52 /* MenuRootView.swift */,
 				8B65434108D6E8108BD12A74 /* QuickEntryView.swift */,
 				B3992FA5AD11BDDB7451510F /* ReminderEditorView.swift */,
+				CD8477AD2D1D161E619CACA2 /* ReminderPresentation.swift */,
+				9BC6BE55566C76FCF4FC4E8C /* ReminderRow.swift */,
 				C890C6B4795075390038A326 /* SettingsView.swift */,
 			);
 			path = Views;
@@ -294,6 +300,8 @@
 				4EAC55537DF9CE105F6647E6 /* QuickEntryView.swift in Sources */,
 				1141076F69A6BE9F85CA4B04 /* ReminderEditorView.swift in Sources */,
 				611CA3FB9E6CA3C3D09A43E2 /* ReminderOperationCoordinator.swift in Sources */,
+				635F25F0AA2AD2FB3D605B65 /* ReminderPresentation.swift in Sources */,
+				0F3873FBDA10DEB308BFD987 /* ReminderRow.swift in Sources */,
 				385A5F1D577D4B3156E0A10F /* ReminderService.swift in Sources */,
 				55C7A0722A9A58FF97E6C702 /* RemoteConfiguration.swift in Sources */,
 				76C95316DC0973F18C5790E0 /* RemoteReminderService.swift in Sources */,
@@ -381,7 +389,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.3;
+				MARKETING_VERSION = 0.1.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -459,7 +467,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.3;
+				MARKETING_VERSION = 0.1.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -619,7 +627,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.3;
+				MARKETING_VERSION = 0.1.4;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

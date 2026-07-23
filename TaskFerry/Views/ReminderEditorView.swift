@@ -31,7 +31,7 @@ struct ReminderEditorView: View {
             ) {
                 Button(isSaving ? "Saving…" : "Save", action: save)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(isSaving || isDeleting || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || listID.isEmpty)
+                    .disabled(isSaving || isDeleting || title.trimmed.isEmpty || listID.isEmpty)
             }
             Divider()
 
@@ -101,7 +101,7 @@ struct ReminderEditorView: View {
     }
 
     private func save() {
-        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTitle = title.trimmed
         guard !isSaving, !isDeleting else { return }
         let selectedListID = listID
         let selectedDue = due

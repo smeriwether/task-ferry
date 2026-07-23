@@ -29,17 +29,3 @@ extension CredentialStore {
         }
     }
 }
-
-struct KeychainCredentialStore: CredentialStore {
-    func string(for account: String) -> String {
-        KeychainStore.string(for: account)
-    }
-
-    func set(_ value: String, for account: String) throws {
-        try KeychainStore.set(value, for: account)
-    }
-
-    func randomToken() throws -> String {
-        try KeychainStore.randomToken()
-    }
-}

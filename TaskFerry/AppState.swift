@@ -13,16 +13,16 @@ enum AppPreferences {
 @Observable
 final class AppState {
     struct StoredCredentials: Sendable {
-        let accessClientID: String
-        let accessClientSecret: String
-        let bridgeToken: String
+        var accessClientID: String
+        var accessClientSecret: String
+        var bridgeToken: String
     }
 
     enum ConnectionState: Equatable {
         case idle
         case loading
         case connected
-        case failed(String)
+        case failed
     }
 
     private enum SecretKey {
@@ -86,7 +86,7 @@ final class AppState {
     init(
         isDemo: Bool? = nil,
         defaults: UserDefaults = .standard,
-        credentialStore: any CredentialStore = KeychainCredentialStore(),
+        credentialStore: any CredentialStore = KeychainStore(),
         serviceFactory: ReminderServiceFactory = .live
     ) {
         let demoMode = isDemo ?? (ProcessInfo.processInfo.environment["TASK_FERRY_DEMO"] == "1")
@@ -285,19 +285,8 @@ final class AppState {
     @discardableResult
     func regenerateBridgeToken() async throws -> String {
         if isDemo { return bridgeToken }
-        let store = credentialStore
-        let token = try await Task.detached(priority: .userInitiated) {
-            let token = try store.randomToken()
-            try store.set(token, for: SecretKey.bridgeToken)
-            return token
-        }.value
-        cachedCredentials = StoredCredentials(
-            accessClientID: accessClientID,
-            accessClientSecret: accessClientSecret,
-            bridgeToken: token
-        )
-        credentialsLoaded = true
-        if mode == .bridge { configureService(for: .bridge, bridgeTokenOverride: token) }
+        let token = try await generateAndStoreBridgeToken()
+        if mode == .bridge { configureService(for: .bridge) }
         return token
     }
 
@@ -342,33 +331,34 @@ final class AppState {
 
     private func ensureBridgeToken() async throws {
         guard bridgeToken.isEmpty else { return }
+        _ = try await generateAndStoreBridgeToken()
+    }
+
+    private func generateAndStoreBridgeToken() async throws -> String {
         let store = credentialStore
         let token = try await Task.detached(priority: .userInitiated) {
             let token = try store.randomToken()
             try store.set(token, for: SecretKey.bridgeToken)
             return token
         }.value
-        cachedCredentials = StoredCredentials(
-            accessClientID: accessClientID,
-            accessClientSecret: accessClientSecret,
-            bridgeToken: token
-        )
+        cachedCredentials.bridgeToken = token
         credentialsLoaded = true
+        return token
     }
 
-    private func configureService(for mode: AppMode, bridgeTokenOverride: String? = nil) {
+    private func configureService(for mode: AppMode) {
         bridge?.stop()
         bridge = nil
         switch mode {
         case .bridge:
             let localService = serviceFactory.makeBridgeService()
             operations.replaceService(localService)
-            let token = bridgeTokenOverride ?? bridgeToken
+            let token = bridgeToken
             guard !token.isEmpty else {
                 setError("Could not create a bridge token in Keychain.", source: .configuration)
                 return
             }
-            let server = serviceFactory.makeBridgeServer(localService, token)
+            let server = serviceFactory.makeBridgeServer(operations, token)
             server.onStateChange = { [weak self] newState in
                 self?.bridgeState = newState
             }
@@ -414,7 +404,6 @@ final class AppState {
                 clearError()
             }
         case .failure(let message):
-            connectionState = .failed(message)
             setError(message, source: source)
         case .unavailable:
             connectionState = .idle
@@ -425,7 +414,7 @@ final class AppState {
     }
 
     private func setError(_ message: String, source: ErrorSource) {
-        connectionState = .failed(message)
+        connectionState = .failed
         errorMessage = message
         errorSource = source
     }

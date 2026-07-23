@@ -334,12 +334,7 @@ private struct RemindersView: View {
         } else {
             List {
                 ForEach(state.visibleReminders) { reminder in
-                    ReminderRow(state: state, reminder: reminder)
-                        .contextMenu {
-                            Button("Mark as Complete", systemImage: "checkmark") {
-                                Task { await state.complete(reminder) }
-                            }
-                        }
+                    ReminderRow(state: state, reminder: reminder, context: .day)
                 }
             }
             .listStyle(.inset)
@@ -347,7 +342,7 @@ private struct RemindersView: View {
     }
 
     private func addReminder() {
-        let title = quickTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = quickTitle.trimmed
         guard !title.isEmpty, !quickListID.isEmpty, !isAddingReminder else { return }
         let calendar = Calendar.autoupdatingCurrent
         let day = state.selectedView == .today
@@ -371,66 +366,6 @@ private struct RemindersView: View {
     private func selectDefaultListIfNeeded() {
         guard !state.snapshot.lists.contains(where: { $0.id == quickListID }) else { return }
         quickListID = state.defaultListID ?? ""
-    }
-}
-
-private struct ReminderRow: View {
-    @Bindable var state: AppState
-    let reminder: ReminderRecord
-    @State private var isHoveringCompletion = false
-
-    var body: some View {
-        HStack(spacing: 11) {
-            Button {
-                Task { await state.complete(reminder) }
-            } label: {
-                Image(systemName: "circle")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(listColor)
-                    .frame(width: 28, height: 28)
-                    .overlay {
-                        if isHoveringCompletion {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(listColor)
-                        }
-                    }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Complete \(reminder.title)")
-            .help("Mark as Complete")
-            .onHover { isHoveringCompletion = $0 }
-
-            NavigationLink {
-                ReminderEditorView(state: state, reminder: reminder, defaultListID: reminder.listID)
-            } label: {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(reminder.title)
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                    HStack(spacing: 6) {
-                        Circle().fill(listColor).frame(width: 6, height: 6)
-                        Text(state.list(for: reminder.listID)?.title ?? "Unknown List")
-                        if let text = reminder.due?.displayText {
-                            Text("·")
-                            Text(text)
-                                .foregroundStyle(reminder.due?.isBeforeDay(Date()) == true ? .red : .secondary)
-                        }
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-        }
-        .padding(.vertical, 6)
-    }
-
-    private var listColor: Color {
-        Color(hex: state.list(for: reminder.listID)?.colorHex ?? "5E5CE6")
     }
 }
 
@@ -472,10 +407,10 @@ private struct QuickAddView: View {
             Button(action: submit) {
                 Image(systemName: isSubmitting ? "clock" : "arrow.up.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(title.trimmingCharacters(in: .whitespaces).isEmpty ? Color.secondary : Color.accentColor)
+                    .foregroundStyle(title.trimmed.isEmpty ? Color.secondary : Color.accentColor)
             }
             .buttonStyle(.plain)
-            .disabled(isSubmitting || title.trimmingCharacters(in: .whitespaces).isEmpty || selectedListID.isEmpty)
+            .disabled(isSubmitting || title.trimmed.isEmpty || selectedListID.isEmpty)
             .accessibilityLabel("Add reminder")
         }
         .padding(12)
@@ -507,52 +442,5 @@ struct ErrorBanner: View {
         }
         .padding(10)
         .background(.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
-    }
-}
-
-private struct ConnectionLabel: View {
-    let state: AppState.ConnectionState
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Circle().fill(color).frame(width: 6, height: 6)
-            Text(text).font(.caption).foregroundStyle(.secondary)
-        }
-    }
-
-    private var text: String {
-        switch state {
-        case .idle: "Not configured"
-        case .loading: "Refreshing"
-        case .connected: "Connected"
-        case .failed: "Offline"
-        }
-    }
-
-    private var color: Color {
-        switch state {
-        case .connected: .green
-        case .loading: .orange
-        case .idle, .failed: .secondary
-        }
-    }
-}
-
-extension Color {
-    init(hex: String) {
-        let value = Int(hex, radix: 16) ?? 0x5E5CE6
-        self.init(
-            red: Double((value >> 16) & 0xFF) / 255,
-            green: Double((value >> 8) & 0xFF) / 255,
-            blue: Double(value & 0xFF) / 255
-        )
-    }
-}
-
-private extension ReminderDue {
-    var displayText: String? {
-        if isBeforeDay(Date()) { return "Overdue" }
-        guard hasTime, let date = date() else { return nil }
-        return date.formatted(date: .omitted, time: .shortened)
     }
 }

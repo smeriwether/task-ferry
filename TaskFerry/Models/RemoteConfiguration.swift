@@ -7,10 +7,10 @@ struct RemoteConfiguration: Equatable, Sendable {
     let bridgeToken: String
 
     init(endpoint: String, accessClientID: String, accessClientSecret: String, bridgeToken: String) throws {
-        let endpoint = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
-        let accessClientID = accessClientID.trimmingCharacters(in: .whitespacesAndNewlines)
-        let accessClientSecret = accessClientSecret.trimmingCharacters(in: .whitespacesAndNewlines)
-        let bridgeToken = bridgeToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        let endpoint = endpoint.trimmed
+        let accessClientID = accessClientID.trimmed
+        let accessClientSecret = accessClientSecret.trimmed
+        let bridgeToken = bridgeToken.trimmed
 
         guard var components = URLComponents(string: endpoint),
               components.scheme?.lowercased() == "https",

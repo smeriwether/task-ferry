@@ -1,14 +1,14 @@
 import Foundation
 import Security
 
-enum KeychainStore {
+struct KeychainStore: CredentialStore {
     private static let service = "com.merimerimeri.TaskFerry"
     private static let tokenAlphabet = Array("23456789ABCDEFGHJKMNPQRSTVWXYZ")
 
-    static func string(for account: String) -> String {
+    func string(for account: String) -> String {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: Self.service,
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
@@ -22,10 +22,10 @@ enum KeychainStore {
         return value
     }
 
-    static func set(_ value: String, for account: String) throws {
+    func set(_ value: String, for account: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: Self.service,
             kSecAttrAccount as String: account
         ]
         if value.isEmpty {
@@ -51,7 +51,7 @@ enum KeychainStore {
         }
     }
 
-    static func randomToken() throws -> String {
+    func randomToken() throws -> String {
         var characters: [Character] = []
         while characters.count < 24 {
             var bytes = [UInt8](repeating: 0, count: 32)
@@ -59,7 +59,7 @@ enum KeychainStore {
                 throw ReminderServiceError.message("Could not create a secure bridge token.")
             }
             for byte in bytes where byte < 240 {
-                characters.append(tokenAlphabet[Int(byte) % tokenAlphabet.count])
+                characters.append(Self.tokenAlphabet[Int(byte) % Self.tokenAlphabet.count])
                 if characters.count == 24 { break }
             }
         }

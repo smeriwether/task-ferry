@@ -25,8 +25,8 @@ final class BridgeServer {
         didSet { onStateChange?(state) }
     }
 
-    init(service: any ReminderService, token: String) {
-        operations = ReminderOperationCoordinator(service: service)
+    init(operations: ReminderOperationCoordinator, token: String) {
+        self.operations = operations
         self.token = token
     }
 

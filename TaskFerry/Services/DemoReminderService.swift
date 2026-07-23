@@ -88,7 +88,3 @@ final class DemoReminderService: ReminderService {
         return value
     }
 }
-
-private extension String {
-    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
-}

@@ -100,7 +100,3 @@ private enum QuickDue: String, CaseIterable, Identifiable {
         return ReminderDue(date: date, includesTime: false)
     }
 }
-
-private extension String {
-    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
-}
