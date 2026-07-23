@@ -15,6 +15,19 @@ struct SettingsView: View {
     @State private var connectionSaving = false
     @State private var tokenGenerating = false
     @State private var message: String?
+    @State private var cloudflareSheet: CloudflareSheet?
+
+    private enum CloudflareSheet: Identifiable {
+        case setup
+        case remove(CloudflareProvisioning)
+
+        var id: String {
+            switch self {
+            case .setup: "setup"
+            case .remove: "remove"
+            }
+        }
+    }
 
     var body: some View {
         Form {
@@ -64,6 +77,10 @@ struct SettingsView: View {
                             }
                         }
                         .disabled(connectionSaving)
+                        Button("Paste Connection Code") {
+                            pasteConnectionCode()
+                        }
+                        .disabled(connectionSaving)
                     }
                 }
             } else if state.mode == .bridge {
@@ -105,6 +122,31 @@ struct SettingsView: View {
                     .disabled(tokenGenerating)
                 }
 
+                Section("Remote Access") {
+                    if let hostname = state.cloudflareHostname {
+                        LabeledContent("Public address", value: hostname)
+                        LabeledContent("Cloudflare connector", value: connectorDetail)
+                        HStack {
+                            Button("Copy Connection Code") {
+                                copyConnectionCode()
+                            }
+                            Button("Remove Cloudflare Setup…", role: .destructive) {
+                                guard let provisioning = state.cloudflareProvisioning else { return }
+                                cloudflareSheet = .remove(provisioning)
+                            }
+                        }
+                        Text("The connection code contains passwords. Share it only with the Mac that will connect to this bridge.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Let Task Ferry create a tunnel, DNS record, and protected Access connection in your own Cloudflare account.")
+                            .foregroundStyle(.secondary)
+                        Button("Set Up with Cloudflare…") {
+                            cloudflareSheet = .setup
+                        }
+                    }
+                }
+
                 Section("Background") {
                     Toggle("Run in Background", isOn: runsInBackgroundBinding)
                     Text("Hides the Dock icon while the bridge keeps running. Open Task Ferry again from Applications whenever you need its window.")
@@ -140,8 +182,16 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 420)
+        .frame(width: 500, height: 540)
         .navigationTitle("Task Ferry")
+        .sheet(item: $cloudflareSheet) { sheet in
+            switch sheet {
+            case .setup:
+                CloudflareSetupView(state: state, purpose: .create)
+            case .remove(let provisioning):
+                CloudflareSetupView(state: state, purpose: .remove(provisioning))
+            }
+        }
         .task {
             endpoint = state.endpoint
             async let storedCredentials = state.loadStoredCredentials()
@@ -176,6 +226,44 @@ struct SettingsView: View {
         } catch {
             message = error.localizedDescription
             return false
+        }
+    }
+
+    private func pasteConnectionCode() {
+        guard let value = NSPasteboard.general.string(forType: .string) else {
+            message = "The clipboard is empty."
+            return
+        }
+        do {
+            let connection = try TaskFerryConnectionCode.decode(value)
+            endpoint = connection.endpoint
+            clientID = connection.accessClientID
+            clientSecret = connection.accessClientSecret
+            bridgeToken = connection.bridgeToken
+            message = "Connection code loaded. Choose Save & Test to finish."
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func copyConnectionCode() {
+        do {
+            let code = try state.connectionCode()
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(code, forType: .string)
+            message = "Connection code copied. It contains passwords, so share it securely."
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private var connectorDetail: String {
+        switch state.cloudflareConnectorState {
+        case .notConfigured: "Not configured"
+        case .stopped: "Stopped"
+        case .starting: "Connecting…"
+        case .connected: "Connected"
+        case .failed(let message): message
         }
     }
 

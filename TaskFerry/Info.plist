@@ -32,5 +32,9 @@
 	<string>Task Ferry uses your reminders to make them available through your private bridge.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>TaskFerryCloudflareOAuthClientID</key>
+	<string>$(TASK_FERRY_CLOUDFLARE_OAUTH_CLIENT_ID)</string>
+	<key>TaskFerryCloudflareOAuthRedirectURI</key>
+	<string>http://127.0.0.1:8789/cloudflare/oauth</string>
 </dict>
 </plist>

@@ -59,7 +59,7 @@ final class AppStateTests: XCTestCase {
         await state.start()
 
         XCTAssertEqual(state.bridgeToken, "TEST-TOKEN")
-        XCTAssertEqual(credentials.readCount, 3)
+        XCTAssertEqual(credentials.readCount, 4)
         XCTAssertFalse(credentials.readOccurredOnMainThread)
     }
 

@@ -13,8 +13,9 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     SWIFT_TREAT_WARNINGS_AS_ERRORS: true
     CURRENT_PROJECT_VERSION: 1
-    MARKETING_VERSION: 0.1.5
+    MARKETING_VERSION: 0.1.6
     CODE_SIGN_STYLE: Automatic
+    TASK_FERRY_CLOUDFLARE_OAUTH_CLIENT_ID: "fcb358ecbd170213ce612c27de3b4cad"
 packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
@@ -25,6 +26,14 @@ targets:
     platform: macOS
     sources:
       - TaskFerry
+      - path: .vendor/cloudflared/cloudflared
+        optional: true
+        buildPhase:
+          copyFiles:
+            destination: executables
+      - path: .vendor/cloudflared/cloudflared-LICENSE
+        optional: true
+        buildPhase: resources
     dependencies:
       - package: Sparkle
     settings:
@@ -44,6 +53,16 @@ targets:
           CODE_SIGN_ENTITLEMENTS: TaskFerry/TaskFerry-Direct.entitlements
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: false
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) SPARKLE_ENABLED"
+    postBuildScripts:
+      - name: Sign Cloudflare connector
+        basedOnDependencyAnalysis: false
+        script: |
+          "$SRCROOT/scripts/sign-cloudflared.sh" \
+            "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/cloudflared" \
+            "${EXPANDED_CODE_SIGN_IDENTITY:--}" \
+            "$CONFIGURATION"
+        inputFiles:
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/cloudflared
     scheme:
       archive:
         config: Release-Direct
@@ -56,6 +75,7 @@ targets:
       - TaskFerryTests
       - TaskFerry/AppState.swift
       - TaskFerry/Models/Models.swift
+      - TaskFerry/Models/CloudflareModels.swift
       - TaskFerry/Models/RemoteConfiguration.swift
       - TaskFerry/Services/ReminderService.swift
       - TaskFerry/Services/ReminderOperationCoordinator.swift
@@ -65,6 +85,9 @@ targets:
       - TaskFerry/Services/KeychainStore.swift
       - TaskFerry/Services/RemoteReminderService.swift
       - TaskFerry/Services/EventKitReminderService.swift
+      - TaskFerry/Services/CloudflareAPIClient.swift
+      - TaskFerry/Services/CloudflareOAuthClient.swift
+      - TaskFerry/Services/CloudflareTunnelConnector.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.merimerimeri.TaskFerryTests

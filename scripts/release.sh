@@ -22,6 +22,7 @@ rm -rf "$BUILD_ROOT"
 mkdir -p "$BUILD_ROOT" "$EXPORT" "$STAGING"
 cd "$ROOT"
 
+scripts/fetch-cloudflared.sh
 xcodegen generate
 xcodebuild -resolvePackageDependencies \
   -project TaskFerry.xcodeproj \
@@ -57,6 +58,9 @@ xcodebuild -exportArchive \
   -exportPath "$EXPORT"
 
 APP="$EXPORT/TaskFerry.app"
+HELPER="$APP/Contents/MacOS/cloudflared"
+[[ -x "$HELPER" ]] || { echo "The app is missing cloudflared" >&2; exit 1; }
+codesign --verify --strict --verbose=2 "$HELPER"
 NOTARY_ZIP="$BUILD_ROOT/TaskFerry-notarize.zip"
 DMG="$BUILD_ROOT/TaskFerry-$VERSION.dmg"
 ZIP="$BUILD_ROOT/TaskFerry-$VERSION.zip"

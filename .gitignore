@@ -4,5 +4,6 @@ build/
 DerivedData/
 .derivedData/
 .derivedData-*/
+.vendor/
 *.xcuserstate
 xcuserdata/

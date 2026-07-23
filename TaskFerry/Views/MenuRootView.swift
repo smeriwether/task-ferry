@@ -29,6 +29,9 @@ struct MenuRootView: View {
             guard phase == .active, state.mode != nil else { return }
             Task { await state.refresh(showLoadingIndicator: false) }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            state.stopCloudflareConnector()
+        }
     }
 }
 
@@ -174,6 +177,12 @@ private struct BridgeView: View {
                         detail: remindersDetail,
                         ready: state.connectionState == .connected
                     )
+                    statusRow(
+                        symbol: "cloud",
+                        title: "Remote access",
+                        detail: cloudflareDetail,
+                        ready: state.cloudflareConnectorState == .connected
+                    )
                 }
             }
             .listStyle(.inset)
@@ -219,6 +228,21 @@ private struct BridgeView: View {
             "Access needs attention"
         case .idle:
             "Not checked yet"
+        }
+    }
+
+    private var cloudflareDetail: String {
+        switch state.cloudflareConnectorState {
+        case .notConfigured:
+            "Not configured"
+        case .stopped:
+            "Connector stopped"
+        case .starting:
+            "Connecting to Cloudflare…"
+        case .connected:
+            state.cloudflareHostname ?? "Connected"
+        case .failed(let message):
+            message
         }
     }
 

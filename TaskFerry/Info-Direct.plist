@@ -38,5 +38,9 @@
 	<string>TqzZIoTJ7EUsp9KlEEwfuOX2LKGg58sfVX1CldgAveg=</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
+	<key>TaskFerryCloudflareOAuthClientID</key>
+	<string>$(TASK_FERRY_CLOUDFLARE_OAUTH_CLIENT_ID)</string>
+	<key>TaskFerryCloudflareOAuthRedirectURI</key>
+	<string>http://127.0.0.1:8789/cloudflare/oauth</string>
 </dict>
 </plist>

@@ -7,6 +7,7 @@ enum AppPreferences {
     static let endpoint = "endpoint"
     static let port = "port"
     static let runsInBackground = "runs-in-background"
+    static let cloudflareProvisioning = "cloudflare-provisioning"
 }
 
 @MainActor
@@ -16,6 +17,7 @@ final class AppState {
         var accessClientID: String
         var accessClientSecret: String
         var bridgeToken: String
+        var tunnelToken: String
     }
 
     enum ConnectionState: Equatable {
@@ -29,6 +31,7 @@ final class AppState {
         static let accessClientID = "access-client-id"
         static let accessClientSecret = "access-client-secret"
         static let bridgeToken = "bridge-token"
+        static let tunnelToken = "cloudflare-tunnel-token"
     }
 
     private enum ErrorSource: Equatable {
@@ -42,6 +45,7 @@ final class AppState {
     var selectedView = SmartView.today
     var connectionState = ConnectionState.idle
     var bridgeState = BridgeServer.State.stopped
+    var cloudflareConnectorState = CloudflareConnectorState.notConfigured
     var errorMessage: String?
     var runsInBackground: Bool
 
@@ -57,10 +61,16 @@ final class AppState {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let credentialStore: any CredentialStore
     @ObservationIgnored private let serviceFactory: ReminderServiceFactory
+    @ObservationIgnored private let cloudflareConnector: CloudflareTunnelConnector
     @ObservationIgnored private var errorSource: ErrorSource?
     @ObservationIgnored private var demoEndpoint = "https://reminders.merimerimeri.com"
     @ObservationIgnored private var credentialsLoaded = false
-    private var cachedCredentials = StoredCredentials(accessClientID: "", accessClientSecret: "", bridgeToken: "")
+    private var cachedCredentials = StoredCredentials(
+        accessClientID: "",
+        accessClientSecret: "",
+        bridgeToken: "",
+        tunnelToken: ""
+    )
 
     var endpoint: String {
         get { isDemo ? demoEndpoint : defaults.string(forKey: AppPreferences.endpoint) ?? "https://reminders.merimerimeri.com" }
@@ -84,12 +94,21 @@ final class AppState {
     var accessClientID: String { cachedCredentials.accessClientID }
     var accessClientSecret: String { cachedCredentials.accessClientSecret }
     var bridgeToken: String { cachedCredentials.bridgeToken }
+    var tunnelToken: String { cachedCredentials.tunnelToken }
+
+    var cloudflareProvisioning: CloudflareProvisioning? {
+        guard let data = defaults.data(forKey: AppPreferences.cloudflareProvisioning) else { return nil }
+        return try? JSONDecoder().decode(CloudflareProvisioning.self, from: data)
+    }
+
+    var cloudflareHostname: String? { cloudflareProvisioning?.hostname }
 
     init(
         isDemo: Bool? = nil,
         defaults: UserDefaults = .standard,
         credentialStore: any CredentialStore = KeychainStore(),
         serviceFactory: ReminderServiceFactory = .live,
+        cloudflareConnector: CloudflareTunnelConnector = CloudflareTunnelConnector(),
         automaticRefreshInterval: Duration = .seconds(15)
     ) {
         let demoMode = isDemo ?? (ProcessInfo.processInfo.environment["TASK_FERRY_DEMO"] == "1")
@@ -97,13 +116,15 @@ final class AppState {
         self.defaults = defaults
         self.credentialStore = credentialStore
         self.serviceFactory = serviceFactory
+        self.cloudflareConnector = cloudflareConnector
         self.automaticRefreshInterval = automaticRefreshInterval
         runsInBackground = demoMode ? false : defaults.bool(forKey: AppPreferences.runsInBackground)
         if demoMode {
             cachedCredentials = StoredCredentials(
                 accessClientID: "",
                 accessClientSecret: "",
-                bridgeToken: "DEMO-DEMO-DEMO-DEMO-DEMO-DEMO"
+                bridgeToken: "DEMO-DEMO-DEMO-DEMO-DEMO-DEMO",
+                tunnelToken: ""
             )
             credentialsLoaded = true
             mode = ProcessInfo.processInfo.environment["TASK_FERRY_DEMO_ROLE"] == "bridge" ? .bridge : .remote
@@ -116,6 +137,9 @@ final class AppState {
         } else if let value = defaults.string(forKey: AppPreferences.mode),
                   let savedMode = AppMode(rawValue: value) {
             mode = savedMode
+        }
+        cloudflareConnector.onStateChange = { [weak self] connectorState in
+            self?.cloudflareConnectorState = connectorState
         }
     }
 
@@ -182,6 +206,7 @@ final class AppState {
         startTask?.cancel()
         startTask = nil
         stopAutomaticRefresh()
+        cloudflareConnector.stop()
         bridge?.stop()
         bridge = nil
         bridgeState = .stopped
@@ -265,7 +290,8 @@ final class AppState {
         cachedCredentials = StoredCredentials(
             accessClientID: configuration.accessClientID,
             accessClientSecret: configuration.accessClientSecret,
-            bridgeToken: configuration.bridgeToken
+            bridgeToken: configuration.bridgeToken,
+            tunnelToken: tunnelToken
         )
         credentialsLoaded = true
         self.endpoint = configuration.endpoint.absoluteString
@@ -279,7 +305,8 @@ final class AppState {
             StoredCredentials(
                 accessClientID: store.string(for: SecretKey.accessClientID),
                 accessClientSecret: store.string(for: SecretKey.accessClientSecret),
-                bridgeToken: store.string(for: SecretKey.bridgeToken)
+                bridgeToken: store.string(for: SecretKey.bridgeToken),
+                tunnelToken: store.string(for: SecretKey.tunnelToken)
             )
         }.value
         cachedCredentials = credentials
@@ -301,6 +328,79 @@ final class AppState {
             defaults.set(enabled, forKey: AppPreferences.runsInBackground)
         }
         applyActivationPolicy()
+    }
+
+    func saveCloudflareProvisioning(_ result: CloudflareProvisioningResult) async throws {
+        guard mode == .bridge else {
+            throw ReminderServiceError.message("Cloudflare setup must be completed on the reminders bridge Mac.")
+        }
+        let store = credentialStore
+        try await Task.detached(priority: .userInitiated) {
+            try store.setAtomically([
+                (SecretKey.accessClientID, result.secrets.accessClientID),
+                (SecretKey.accessClientSecret, result.secrets.accessClientSecret),
+                (SecretKey.tunnelToken, result.secrets.tunnelToken)
+            ])
+        }.value
+        let data = try JSONEncoder().encode(result.provisioning)
+        defaults.set(data, forKey: AppPreferences.cloudflareProvisioning)
+        endpoint = "https://\(result.provisioning.hostname)"
+        cachedCredentials.accessClientID = result.secrets.accessClientID
+        cachedCredentials.accessClientSecret = result.secrets.accessClientSecret
+        cachedCredentials.tunnelToken = result.secrets.tunnelToken
+        credentialsLoaded = true
+        cloudflareConnector.start(token: result.secrets.tunnelToken)
+    }
+
+    func removeStoredCloudflareProvisioning() async throws {
+        let store = credentialStore
+        try await Task.detached(priority: .userInitiated) {
+            try store.setAtomically([
+                (SecretKey.accessClientID, ""),
+                (SecretKey.accessClientSecret, ""),
+                (SecretKey.tunnelToken, "")
+            ])
+        }.value
+        cachedCredentials.accessClientID = ""
+        cachedCredentials.accessClientSecret = ""
+        cachedCredentials.tunnelToken = ""
+        defaults.removeObject(forKey: AppPreferences.cloudflareProvisioning)
+        defaults.removeObject(forKey: AppPreferences.endpoint)
+        cloudflareConnector.stop()
+    }
+
+    func connectionCode() throws -> String {
+        guard mode == .bridge, let provisioning = cloudflareProvisioning else {
+            throw ReminderServiceError.message("Set up Cloudflare before copying a connection code.")
+        }
+        guard !accessClientID.isEmpty, !accessClientSecret.isEmpty, !bridgeToken.isEmpty else {
+            throw ReminderServiceError.message("Task Ferry could not load all connection credentials from Keychain.")
+        }
+        return try TaskFerryConnectionCode(
+            endpoint: "https://\(provisioning.hostname)",
+            accessClientID: accessClientID,
+            accessClientSecret: accessClientSecret,
+            bridgeToken: bridgeToken
+        ).encoded()
+    }
+
+    func saveConnectionCode(_ code: String) async throws {
+        let connection = try TaskFerryConnectionCode.decode(code)
+        try await saveRemoteConfiguration(
+            endpoint: connection.endpoint,
+            clientID: connection.accessClientID,
+            clientSecret: connection.accessClientSecret,
+            bridgeToken: connection.bridgeToken
+        )
+    }
+
+    func stopCloudflareConnector() {
+        cloudflareConnector.stop()
+    }
+
+    func startCloudflareConnector() {
+        guard mode == .bridge, !tunnelToken.isEmpty else { return }
+        cloudflareConnector.start(token: tunnelToken)
     }
 
     func dismissError() {
@@ -370,8 +470,14 @@ final class AppState {
             }
             server.start(port: port)
             bridge = server
+            if tunnelToken.isEmpty {
+                cloudflareConnector.stop()
+            } else {
+                cloudflareConnector.start(token: tunnelToken)
+            }
             if errorSource == .configuration { clearError() }
         case .remote:
+            cloudflareConnector.stop()
             do {
                 let configuration = try RemoteConfiguration(
                     endpoint: endpoint,
