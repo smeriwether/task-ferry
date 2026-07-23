@@ -62,6 +62,39 @@ final class AppStateTests: XCTestCase {
         XCTAssertEqual(credentials.readCount, 3)
         XCTAssertFalse(credentials.readOccurredOnMainThread)
     }
+
+    func testRemoteModeRefreshesWithoutAnActiveViewAndStopsAfterReset() async {
+        let suiteName = "TaskFerryTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(AppMode.remote.rawValue, forKey: AppPreferences.mode)
+        defaults.set("https://example.com", forKey: AppPreferences.endpoint)
+        let credentials = InMemoryCredentialStore(values: ["bridge-token": "TEST-TOKEN"])
+        let service = CountingService()
+        let factory = ReminderServiceFactory(
+            makeBridgeService: { service },
+            makeRemoteService: { _ in service },
+            makeBridgeServer: { BridgeServer(operations: $0, token: $1) }
+        )
+        let state = AppState(
+            isDemo: false,
+            defaults: defaults,
+            credentialStore: credentials,
+            serviceFactory: factory,
+            automaticRefreshInterval: .milliseconds(10)
+        )
+
+        await state.start()
+        for _ in 0..<50 where service.snapshotCount < 2 {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertGreaterThanOrEqual(service.snapshotCount, 2)
+
+        state.resetMode()
+        let countAfterReset = service.snapshotCount
+        try? await Task.sleep(for: .milliseconds(40))
+        XCTAssertEqual(service.snapshotCount, countAfterReset)
+    }
 }
 
 @MainActor
@@ -69,6 +102,18 @@ private final class MutationFailingService: ReminderService {
     func execute(_ request: RPCRequest) async throws -> ReminderSnapshot {
         if request.operation != .snapshot {
             throw ReminderServiceError.message("Mutation failed")
+        }
+        return .empty
+    }
+}
+
+@MainActor
+private final class CountingService: ReminderService {
+    private(set) var snapshotCount = 0
+
+    func execute(_ request: RPCRequest) async throws -> ReminderSnapshot {
+        if request.operation == .snapshot {
+            snapshotCount += 1
         }
         return .empty
     }

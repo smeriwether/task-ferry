@@ -50,8 +50,10 @@ final class AppState {
     @ObservationIgnored private var isStarted = false
     @ObservationIgnored private var isRefreshing = false
     @ObservationIgnored private var startTask: Task<Void, Never>?
+    @ObservationIgnored private var automaticRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var startGeneration = 0
     @ObservationIgnored private let isDemo: Bool
+    @ObservationIgnored private let automaticRefreshInterval: Duration
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let credentialStore: any CredentialStore
     @ObservationIgnored private let serviceFactory: ReminderServiceFactory
@@ -87,13 +89,15 @@ final class AppState {
         isDemo: Bool? = nil,
         defaults: UserDefaults = .standard,
         credentialStore: any CredentialStore = KeychainStore(),
-        serviceFactory: ReminderServiceFactory = .live
+        serviceFactory: ReminderServiceFactory = .live,
+        automaticRefreshInterval: Duration = .seconds(15)
     ) {
         let demoMode = isDemo ?? (ProcessInfo.processInfo.environment["TASK_FERRY_DEMO"] == "1")
         self.isDemo = demoMode
         self.defaults = defaults
         self.credentialStore = credentialStore
         self.serviceFactory = serviceFactory
+        self.automaticRefreshInterval = automaticRefreshInterval
         runsInBackground = demoMode ? false : defaults.bool(forKey: AppPreferences.runsInBackground)
         if demoMode {
             cachedCredentials = StoredCredentials(
@@ -177,6 +181,7 @@ final class AppState {
         startGeneration += 1
         startTask?.cancel()
         startTask = nil
+        stopAutomaticRefresh()
         bridge?.stop()
         bridge = nil
         bridgeState = .stopped
@@ -347,6 +352,7 @@ final class AppState {
     }
 
     private func configureService(for mode: AppMode) {
+        stopAutomaticRefresh()
         bridge?.stop()
         bridge = nil
         switch mode {
@@ -375,6 +381,7 @@ final class AppState {
                 )
                 operations.replaceService(serviceFactory.makeRemoteService(configuration))
                 connectionState = .idle
+                startAutomaticRefresh()
                 if errorSource == .configuration { clearError() }
             } catch {
                 operations.replaceService(nil)
@@ -382,6 +389,27 @@ final class AppState {
                 setError(error.localizedDescription, source: .configuration)
             }
         }
+    }
+
+    private func startAutomaticRefresh() {
+        guard mode == .remote, !isDemo else { return }
+        automaticRefreshTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let interval = self?.automaticRefreshInterval else { return }
+                do {
+                    try await Task.sleep(for: interval)
+                } catch {
+                    return
+                }
+                guard let self else { return }
+                await self.refresh(showLoadingIndicator: false)
+            }
+        }
+    }
+
+    private func stopAutomaticRefresh() {
+        automaticRefreshTask?.cancel()
+        automaticRefreshTask = nil
     }
 
     private func perform(_ request: RPCRequest) async -> Bool {

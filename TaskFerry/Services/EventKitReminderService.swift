@@ -39,6 +39,7 @@ final class EventKitReminderService: ReminderService {
     }
 
     private func snapshot() async throws -> ReminderSnapshot {
+        store.refreshSourcesIfNecessary()
         let calendars = writableCalendars()
         let predicate = store.predicateForIncompleteReminders(
             withDueDateStarting: nil,

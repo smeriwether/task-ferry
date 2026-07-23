@@ -266,15 +266,6 @@ private struct RemindersView: View {
         .task {
             await state.refresh()
             selectDefaultListIfNeeded()
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(for: .seconds(15))
-                } catch {
-                    return
-                }
-                await state.refresh(showLoadingIndicator: false)
-                selectDefaultListIfNeeded()
-            }
         }
         .onChange(of: state.snapshot.lists) { _, _ in selectDefaultListIfNeeded() }
     }
