@@ -94,12 +94,12 @@ struct SettingsView: View {
                         }
                         Button("Copy") {
                             NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(bridgeToken, forType: .string)
+                            NSPasteboard.general.setString(state.bridgeToken, forType: .string)
                             message = "Bridge token copied."
                         }
                     }
                     if bridgeTokenRevealed {
-                        Text(bridgeToken)
+                        Text(state.bridgeToken)
                             .font(.system(.body, design: .monospaced))
                             .textSelection(.enabled)
                     }
