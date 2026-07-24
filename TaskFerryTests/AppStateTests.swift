@@ -3,6 +3,39 @@ import XCTest
 
 @MainActor
 final class AppStateTests: XCTestCase {
+    func testConnectionCodeStoresTheCompleteRemoteConfiguration() async throws {
+        let suiteName = "TaskFerryTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(AppMode.remote.rawValue, forKey: AppPreferences.mode)
+        let credentials = InMemoryCredentialStore(values: [:])
+        let service = MutationFailingService()
+        let factory = ReminderServiceFactory(
+            makeBridgeService: { service },
+            makeRemoteService: { _ in service },
+            makeBridgeServer: { BridgeServer(operations: $0, token: $1) }
+        )
+        let state = AppState(
+            isDemo: false,
+            defaults: defaults,
+            credentialStore: credentials,
+            serviceFactory: factory
+        )
+        let code = try TaskFerryConnectionCode(
+            endpoint: "https://task-ferry.example.com",
+            accessClientID: "client-id",
+            accessClientSecret: "client-secret",
+            bridgeToken: "bridge-token"
+        ).encoded()
+
+        try await state.saveConnectionCode("\n\(code)\n")
+
+        XCTAssertEqual(state.endpoint, "https://task-ferry.example.com")
+        XCTAssertEqual(credentials.value(for: "access-client-id"), "client-id")
+        XCTAssertEqual(credentials.value(for: "access-client-secret"), "client-secret")
+        XCTAssertEqual(credentials.value(for: "bridge-token"), "bridge-token")
+    }
+
     func testFailedMutationReturnsFalseAndBackgroundRefreshPreservesItsError() async {
         let suiteName = "TaskFerryTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -151,5 +184,9 @@ private final class InMemoryCredentialStore: CredentialStore, @unchecked Sendabl
 
     var readOccurredOnMainThread: Bool {
         lock.withLock { mainThreadRead }
+    }
+
+    func value(for account: String) -> String {
+        lock.withLock { values[account] ?? "" }
     }
 }

@@ -4,10 +4,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var state: AppState
-    @State private var endpoint = ""
-    @State private var clientID = ""
-    @State private var clientSecret = ""
-    @State private var bridgeToken = ""
+    @State private var connectionCode = ""
+    @State private var connectionCodeRevealed = false
     @State private var bridgeTokenRevealed = false
     @State private var launchAtLogin = false
     @State private var launchAtLoginLoaded = false
@@ -43,44 +41,44 @@ struct SettingsView: View {
 
             if state.mode == .remote {
                 Section("Connection") {
-                    TextField("Server URL", text: $endpoint)
-                        .disabled(connectionSaving)
-                    TextField("Cloudflare client ID", text: $clientID)
-                        .disabled(connectionSaving)
-                    SecureField("Cloudflare client secret", text: $clientSecret)
-                        .disabled(connectionSaving)
-                    HStack {
-                        if bridgeTokenRevealed {
-                            TextField("Bridge token", text: $bridgeToken)
-                        } else {
-                            SecureField("Bridge token", text: $bridgeToken)
+                    if !state.endpoint.isEmpty {
+                        LabeledContent("Current server", value: state.endpoint)
+                    }
+                    LabeledContent("Connection code") {
+                        HStack {
+                            if connectionCodeRevealed {
+                                TextField("TASKFERRY1:…", text: $connectionCode)
+                            } else {
+                                SecureField("TASKFERRY1:…", text: $connectionCode)
+                            }
+                            Button {
+                                connectionCodeRevealed.toggle()
+                            } label: {
+                                Image(systemName: connectionCodeRevealed ? "eye.slash" : "eye")
+                            }
+                            .buttonStyle(.borderless)
+                            .help(connectionCodeRevealed ? "Hide connection code" : "Show connection code")
                         }
-                        Button {
-                            bridgeTokenRevealed.toggle()
-                        } label: {
-                            Image(systemName: bridgeTokenRevealed ? "eye.slash" : "eye")
-                        }
-                        .buttonStyle(.borderless)
-                        .help(bridgeTokenRevealed ? "Hide bridge token" : "Show bridge token")
                     }
                     .disabled(connectionSaving)
+                    Text("Paste the connection code copied from the bridge Mac. It includes the server and all required credentials.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     HStack {
-                        Button(connectionSaving ? "Saving…" : "Save") {
-                            Task { _ = await saveRemote() }
-                        }
-                        .disabled(connectionSaving)
-                        Button("Save & Test") {
-                            Task {
-                                if await saveRemote() {
-                                    await state.refresh()
-                                }
-                            }
-                        }
-                        .disabled(connectionSaving)
-                        Button("Paste Connection Code") {
+                        Button("Paste from Clipboard") {
                             pasteConnectionCode()
                         }
                         .disabled(connectionSaving)
+                        Button(connectionSaving ? "Saving…" : "Save & Test") {
+                            Task { await saveConnectionCodeAndTest() }
+                        }
+                        .disabled(connectionSaving || connectionCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        if !state.endpoint.isEmpty {
+                            Button("Test Current Connection") {
+                                Task { await testCurrentConnection() }
+                            }
+                            .disabled(connectionSaving)
+                        }
                     }
                 }
             } else if state.mode == .bridge {
@@ -111,7 +109,7 @@ struct SettingsView: View {
                         tokenGenerating = true
                         Task {
                             do {
-                                bridgeToken = try await state.regenerateBridgeToken()
+                                _ = try await state.regenerateBridgeToken()
                                 message = "A new easy-to-type bridge token is ready."
                             } catch {
                                 message = error.localizedDescription
@@ -193,39 +191,31 @@ struct SettingsView: View {
             }
         }
         .task {
-            endpoint = state.endpoint
-            async let storedCredentials = state.loadStoredCredentials()
-            async let launchAtLoginStatus = Task.detached(priority: .utility) {
+            let currentLaunchAtLogin = await Task.detached(priority: .utility) {
                 SMAppService.mainApp.status == .enabled
             }.value
-            let currentLaunchAtLogin = await launchAtLoginStatus
             if !launchAtLoginUpdating {
                 launchAtLogin = currentLaunchAtLogin
             }
             launchAtLoginLoaded = true
-            let credentials = await storedCredentials
-            clientID = credentials.accessClientID
-            clientSecret = credentials.accessClientSecret
-            bridgeToken = credentials.bridgeToken
         }
     }
 
-    private func saveRemote() async -> Bool {
-        guard !connectionSaving else { return false }
+    private func saveConnectionCodeAndTest() async {
+        guard !connectionSaving else { return }
         connectionSaving = true
         defer { connectionSaving = false }
         do {
-            try await state.saveRemoteConfiguration(
-                endpoint: endpoint,
-                clientID: clientID,
-                clientSecret: clientSecret,
-                bridgeToken: bridgeToken
-            )
-            message = "Connection saved securely."
-            return true
+            try await state.saveConnectionCode(connectionCode)
+            connectionCode = ""
+            connectionCodeRevealed = false
+            if await state.refresh() {
+                message = "Connection saved securely and tested."
+            } else {
+                message = "Connection saved, but the test failed: \(state.errorMessage ?? "Unknown error")"
+            }
         } catch {
             message = error.localizedDescription
-            return false
         }
     }
 
@@ -235,14 +225,22 @@ struct SettingsView: View {
             return
         }
         do {
-            let connection = try TaskFerryConnectionCode.decode(value)
-            endpoint = connection.endpoint
-            clientID = connection.accessClientID
-            clientSecret = connection.accessClientSecret
-            bridgeToken = connection.bridgeToken
-            message = "Connection code loaded. Choose Save & Test to finish."
+            _ = try TaskFerryConnectionCode.decode(value)
+            connectionCode = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            message = "Connection code pasted. Choose Save & Test to finish."
         } catch {
             message = error.localizedDescription
+        }
+    }
+
+    private func testCurrentConnection() async {
+        guard !connectionSaving else { return }
+        connectionSaving = true
+        defer { connectionSaving = false }
+        if await state.refresh() {
+            message = "Connection test succeeded."
+        } else {
+            message = state.errorMessage ?? "Connection test failed."
         }
     }
 
